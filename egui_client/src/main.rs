@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
 use eframe::egui;
+use rusty_hub::hub::Hub;
 
 fn main() {
     let options = eframe::NativeOptions::default();
@@ -19,9 +20,7 @@ fn setup_custom_fonts(ctx: &egui::Context) {
     // .ttf and .otf files supported.
     fonts.font_data.insert(
         "my_font".to_owned(),
-        egui::FontData::from_static(include_bytes!(
-            "../static/FiraCode-VF.ttf"
-        )),
+        egui::FontData::from_static(include_bytes!("../static/FiraCode-VF.ttf")),
     );
 
     // Put my font first (highest priority) for proportional text:
@@ -44,6 +43,7 @@ fn setup_custom_fonts(ctx: &egui::Context) {
 
 struct MyApp {
     text: String,
+    hub: Hub,
 }
 
 impl MyApp {
@@ -51,6 +51,7 @@ impl MyApp {
         setup_custom_fonts(&cc.egui_ctx);
         Self {
             text: "Edit this text field if you want".to_owned(),
+            hub: Hub::default(),
         }
     }
 }
@@ -58,8 +59,42 @@ impl MyApp {
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("egui using custom fonts");
-            ui.text_edit_multiline(&mut self.text);
+            egui::Grid::new("some_unique_id")
+                .striped(true)
+                .min_row_height(30.0)
+                .max_col_width(500.0)
+                .show(ui, |ui| {
+                    let mut index: usize = 0;
+                    for project in &self.hub.projects {
+                        if self.hub.editor_for_project(project).is_some() {
+                            if ui.button("run").clicked() {
+                                self.hub.run_project_nr(index);
+                            }
+                        }
+                        ui.label(&project.title);
+                        let version_response =
+                            ui.add(egui::Label::new(&project.version).sense(egui::Sense::click()));
+                        version_response.context_menu(|ui| {
+                            for editor in &self.hub.config.editors_configurations {
+                                if ui.button(format!("Open in {}", editor.version)).clicked() {
+                                    Hub::run_project(&editor, &project);
+                                    ui.close_menu();
+                                }
+                            }
+                        });
+                        let path_response =
+                            ui.add(egui::Label::new(&project.path).sense(egui::Sense::click()));
+                        path_response.context_menu(|ui| {
+                            if ui.button("Open directory").clicked() {
+                                use std::process::Command;
+                                Command::new("explorer").arg(&project.path).spawn().unwrap();
+                                ui.close_menu();
+                            }
+                        });
+                        ui.end_row();
+                        index = index + 1;
+                    }
+                });
         });
     }
 }

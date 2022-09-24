@@ -42,19 +42,13 @@ impl UnityProject {
     }
 
     fn get_project_at_path(path: &str) -> Option<UnityProject> {
-        let path = path.trim_matches(char::from(0));
-        let second_path = Path::new(&path.replace("/", "\\")).join("ProjectSettings");
+        let path = path.trim_matches(char::from(0)).replace("/", "\\");
+        let second_path = Path::new(&path).join("ProjectSettings");
         if std::fs::metadata(&second_path).is_err() {
-            println!(
-                "DUPA: {:#?}, {:#?}",
-                second_path.display(),
-                std::fs::metadata(&second_path).err()
-            );
             return None;
         }
         let project_version_file = std::fs::read_to_string(second_path.join("ProjectVersion.txt"));
         if project_version_file.is_err() {
-            println!("DUPA2");
             return None;
         }
         let project_version_file = project_version_file.unwrap();
@@ -64,7 +58,7 @@ impl UnityProject {
 
         Some(UnityProject {
             path: path.to_string(),
-            title: path.to_string(),
+            title: path.split("\\").last().unwrap().to_string(),
             version: project_version,
         })
     }

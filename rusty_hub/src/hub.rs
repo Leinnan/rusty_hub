@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use crate::{config::Configuration, unity_project::UnityProject};
+use crate::{config::Configuration, unity_project::UnityProject, unity_editor::UnityEditor};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Hub {
@@ -15,22 +15,30 @@ impl Hub {
 
     pub fn run_project_nr(&self, nr: usize) {
         let project = self.projects[nr].clone();
-        let project_version = project.version;
+
+        if let Some(editor) = self.editor_for_project(&project) {
+            Hub::run_project(&editor, &project);
+        }
+    }
+
+    pub fn editor_for_project(&self, project: &UnityProject) -> Option<UnityEditor> {
         let editor_option = self
             .config
             .editors_configurations
             .clone()
             .into_iter()
-            .find(|editor| editor.version.contains(&project_version));
+            .find(|editor| editor.version.contains(&project.version));
 
-        if let Some(editor) = editor_option {
-            println!("{} -projectpath {}", editor.exe_path, project.path);
-            Command::new(editor.exe_path)
+        editor_option
+    }
+
+    pub fn run_project(editor: &UnityEditor, project: &UnityProject) {
+        println!("{} -projectpath {}", editor.exe_path, project.path);
+            Command::new(&editor.exe_path)
                 .arg("-projectpath")
-                .arg(project.path)
+                .arg(&project.path)
                 .spawn()
                 .expect("Failed to run project");
-        }
     }
 }
 impl Default for Hub {
