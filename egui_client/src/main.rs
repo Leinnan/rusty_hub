@@ -21,8 +21,7 @@ fn main() {
         decorated: true,
         fullscreen: false,
         drag_and_drop_support: false,
-        initial_window_size: Some(egui::vec2(920.0, 400.0)),
-        resizable: false,
+        initial_window_size: Some(egui::vec2(820.0, 400.0)),
         icon_data: Some(icon),
         ..NativeOptions::default()
     };
@@ -77,6 +76,7 @@ impl MyApp {
 
 impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::top("topPanel").show(ctx, |ui| ui.label("Rusty Unity Hub"));
         egui::SidePanel::left("dsadsa").show(ctx, |ui| {
             ui.set_height(25.0);
             ui.add_space(14.0);
@@ -85,51 +85,55 @@ impl eframe::App for MyApp {
             ui.button("Editors");
         });
         egui::CentralPanel::default().show(ctx, |ui| {
-            egui::Grid::new("some_unique_id")
-                .striped(true)
-                .min_row_height(30.0)
-                .min_col_width(150.0)
-                .max_col_width(800.0)
-                .num_columns(3)
-                .show(ui, |ui| {
-                    let mut index: usize = 0;
-                    for project in &self.hub.projects {
-                        ui.set_row_height(40.0);
-                        ui.scope(|ui| {
-                            ui.set_enabled(self.hub.editor_for_project(project).is_some());
-                            if ui
-                                .button(format!("Open {}", &project.title))
-                                .on_disabled_hover_text(format!("Select different Unity version"))
-                                .clicked()
-                            {
-                                self.hub.run_project_nr(index);
-                            }
-                            ui.set_enabled(true);
-                        });
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                egui::Grid::new("some_unique_id")
+                    .striped(true)
+                    .min_row_height(45.0)
+                    .min_col_width(150.0)
+                    .max_col_width(1000.0)
+                    .num_columns(3)
+                    .show(ui, |ui| {
+                        let mut index: usize = 0;
+                        for project in &self.hub.projects {
+                            ui.scope(|ui| {
+                                ui.set_enabled(self.hub.editor_for_project(project).is_some());
+                                if ui
+                                    .button(format!("Open {}", &project.title))
+                                    .on_disabled_hover_text(format!(
+                                        "Select different Unity version"
+                                    ))
+                                    .clicked()
+                                {
+                                    self.hub.run_project_nr(index);
+                                }
+                                ui.set_enabled(true);
+                            });
 
-                        let version_response =
-                            ui.add(egui::Label::new(&project.version).sense(egui::Sense::click()));
-                        version_response.context_menu(|ui| {
-                            for editor in &self.hub.config.editors_configurations {
-                                if ui.button(format!("Open in {}", &editor.version)).clicked() {
-                                    Hub::run_project(&editor, &project);
+                            let version_response = ui.add(
+                                egui::Label::new(&project.version).sense(egui::Sense::click()),
+                            );
+                            version_response.context_menu(|ui| {
+                                for editor in &self.hub.config.editors_configurations {
+                                    if ui.button(format!("Open in {}", &editor.version)).clicked() {
+                                        Hub::run_project(&editor, &project);
+                                        ui.close_menu();
+                                    }
+                                }
+                            });
+                            let path_response =
+                                ui.add(egui::Label::new(&project.path).sense(egui::Sense::click()));
+                            path_response.context_menu(|ui| {
+                                if ui.button("Open directory").clicked() {
+                                    use std::process::Command;
+                                    Command::new("explorer").arg(&project.path).spawn().unwrap();
                                     ui.close_menu();
                                 }
-                            }
-                        });
-                        let path_response =
-                            ui.add(egui::Label::new(&project.path).sense(egui::Sense::click()));
-                        path_response.context_menu(|ui| {
-                            if ui.button("Open directory").clicked() {
-                                use std::process::Command;
-                                Command::new("explorer").arg(&project.path).spawn().unwrap();
-                                ui.close_menu();
-                            }
-                        });
-                        ui.end_row();
-                        index = index + 1;
-                    }
-                });
+                            });
+                            ui.end_row();
+                            index = index + 1;
+                        }
+                    });
+            });
         });
     }
 }
