@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-
+extern crate confy;
 use eframe::{egui, IconData, NativeOptions};
 use rusty_hub::hub::Hub;
 use std::io::Cursor;
@@ -70,7 +70,7 @@ impl MyApp {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
         setup_custom_fonts(&cc.egui_ctx);
         Self {
-            hub: Hub::default(),
+            hub: confy::load("lwa_unity_hub", "config").unwrap(),
         }
     }
 }
