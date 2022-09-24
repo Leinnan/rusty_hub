@@ -30,6 +30,9 @@ impl UnityEditor {
             let hashmap = string_file_info.children[0].string_map();
             if let Some(result_version) = hashmap.get("ProductVersion") {
                 version = Some(result_version.clone());
+                if let Some(short) = result_version.clone().split("_").take(1).next() {
+                    version = Some(short.to_string());
+                }
             }
             // println!(
             //     "Printing info for {}: \n{:#?}\n\n",
