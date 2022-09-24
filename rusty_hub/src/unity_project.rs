@@ -1,0 +1,71 @@
+use registry::{Hive, Security};
+use std::{path::Path, str};
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct UnityProject {
+    pub path: String,
+    pub title: String,
+    pub version: String,
+}
+
+impl UnityProject {
+    pub fn get_projects_from_registry() -> Vec<UnityProject> {
+        let mut projects = Vec::new();
+
+        let key = Hive::CurrentUser
+            .open(
+                r"SOFTWARE\Unity Technologies\Unity Editor 5.x",
+                Security::Read,
+            )
+            .unwrap();
+        println!("{}", key.to_string());
+
+        for value in key.values() {
+            if value.is_err() {
+                continue;
+            }
+            let val = value.unwrap();
+            let unwraped_name = val.name().to_string().unwrap();
+            if !unwraped_name.contains("RecentlyUsedProjectPaths-") {
+                continue;
+            }
+
+            if let registry::value::Data::Binary(data) = &val.data() {
+                let project_path = str::from_utf8(&data).unwrap().to_string();
+                if let Some(result) = UnityProject::get_project_at_path(&project_path) {
+                    projects.push(result);
+                }
+                println!("\t{}: {}", unwraped_name, project_path);
+            }
+        }
+        projects
+    }
+
+    fn get_project_at_path(path: &str) -> Option<UnityProject> {
+        let path = path.trim_matches(char::from(0));
+        let second_path = Path::new(&path.replace("/", "\\")).join("ProjectSettings");
+        if std::fs::metadata(&second_path).is_err() {
+            println!(
+                "DUPA: {:#?}, {:#?}",
+                second_path.display(),
+                std::fs::metadata(&second_path).err()
+            );
+            return None;
+        }
+        let project_version_file = std::fs::read_to_string(second_path.join("ProjectVersion.txt"));
+        if project_version_file.is_err() {
+            println!("DUPA2");
+            return None;
+        }
+        let project_version_file = project_version_file.unwrap();
+        let mut iter = project_version_file.split_whitespace();
+        iter.next();
+        let project_version = iter.next().unwrap().to_string();
+
+        Some(UnityProject {
+            path: path.to_string(),
+            title: path.to_string(),
+            version: project_version,
+        })
+    }
+}

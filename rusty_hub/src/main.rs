@@ -1,5 +1,3 @@
-use unity_editor::UnityEditor;
-
 use crate::config::Configuration;
 #[macro_use]
 extern crate serde_derive;
@@ -7,14 +5,11 @@ extern crate confy;
 
 mod config;
 mod unity_editor;
+mod unity_project;
 
 fn main() {
     let config = Configuration::default();
-    let paths = config.get_unity_paths();
-    for path in &paths {
-        let editor = UnityEditor::new(&path);
-        if editor.is_some() {
-            println!("{:#?}", editor.unwrap());
-        }
-    }
+    println!("{:#?}", config.editors_configurations);
+    let projects = unity_project::UnityProject::get_projects_from_registry();
+    println!("{:#?}", projects);
 }

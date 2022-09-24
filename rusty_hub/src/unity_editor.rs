@@ -80,7 +80,9 @@ impl UnityEditor {
             }
             let f = path.unwrap();
             if let Ok(result_string) = f.file_name().into_string() {
-                if let Some(value) = platform_names.get(&result_string.clone().to_lowercase().borrow()) {
+                if let Some(value) =
+                    platform_names.get(&result_string.clone().to_lowercase().borrow())
+                {
                     platforms.push(value.to_string());
                 } else {
                     platforms.push(result_string);

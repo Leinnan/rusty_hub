@@ -1,11 +1,24 @@
 use walkdir::{DirEntry, WalkDir};
 
+use crate::unity_editor::UnityEditor;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Configuration {
     pub unity_search_paths: Vec<String>,
+    pub editors_configurations: Vec<UnityEditor>,
 }
 
 impl Configuration {
+    pub fn rebuild(&mut self) {
+        self.editors_configurations = Vec::new();
+        let paths = self.get_unity_paths();
+        for path in &paths {
+            let editor = UnityEditor::new(&path);
+            if editor.is_some() {
+                self.editors_configurations.push(editor.unwrap());
+            }
+        }
+    }
     pub fn get_unity_paths(&self) -> Vec<String> {
         let mut paths = Vec::new();
 
@@ -56,8 +69,12 @@ impl Configuration {
 
 impl Default for Configuration {
     fn default() -> Self {
-        Self {
+        let mut default = Self {
             unity_search_paths: vec!["C:\\Program Files\\Unity\\Hub".to_string()],
-        }
+            editors_configurations: Vec::new(),
+        };
+        default.rebuild();
+
+        default
     }
 }
