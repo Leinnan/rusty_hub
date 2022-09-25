@@ -2,7 +2,7 @@
 
 Very simple alternative for Unity Hub. Rust pet project.
 
-![obraz](https://user-images.githubusercontent.com/13188195/192153778-49e731c3-8820-4963-8c27-d0c6aab32fdc.png)
+![rusty_hub_egui_MfuZVmPa9T](https://user-images.githubusercontent.com/13188195/192160570-44f98c74-8193-4027-b0e4-5b7b0d02157c.gif)
 
 
 ## Thanks
