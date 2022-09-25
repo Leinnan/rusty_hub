@@ -36,10 +36,7 @@ impl Configuration {
     fn is_unity_dir(entry: &DirEntry) -> bool {
         let uninstall_exists = entry.path().clone().join("Uninstall.exe").exists();
         let unity_exe_exists = entry.path().clone().join("Unity.exe").exists();
-        // println!(
-        //     "{}: Unity.exe {}, Uninstall.exe {}", entry.path().display(),
-        //     unity_exe_exists, uninstall_exists
-        // );
+
         uninstall_exists && unity_exe_exists
     }
 
@@ -62,10 +59,6 @@ impl Configuration {
                     result_paths.push(entry_unwraped.path().to_string_lossy().into());
                 }
             }
-        }
-        println!("Result paths are:");
-        for path in &result_paths {
-            println!("- {}", path);
         }
         result_paths
     }

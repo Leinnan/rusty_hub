@@ -154,16 +154,25 @@ impl HubClient {
                     ui.add_space(VERTICAL_SPACING);
                 });
                 header.col(|ui| {
-                    ui.heading("Version");
-                    ui.add_space(VERTICAL_SPACING);
+                    ui.vertical_centered_justified(|ui| {
+                        ui.heading("Version");
+                        ui.add_space(VERTICAL_SPACING);
+                    });
                 });
                 header.col(|ui| {
-                    ui.heading("Branch");
-                    ui.add_space(VERTICAL_SPACING);
+                    ui.vertical_centered_justified(|ui| {
+                        ui.heading("Branch");
+                        ui.add_space(VERTICAL_SPACING);
+                    });
                 });
                 header.col(|ui| {
-                    ui.heading("Directory");
-                    ui.add_space(VERTICAL_SPACING);
+                    ui.with_layout(
+                        Layout::top_down_justified(eframe::emath::Align::Max),
+                        |ui| {
+                            ui.heading("Directory");
+                            ui.add_space(VERTICAL_SPACING);
+                        },
+                    );
                 });
             })
             .body(|body| {
@@ -284,15 +293,11 @@ impl HubClient {
                 row.col(|ui| {
                     ui.vertical_centered_justified(|ui| {
                         ui.add_space(VERTICAL_SPACING);
-                        if ui.button("Refresh").clicked() {
-                            self.hub.update_info();
-                        }
-                    });
-                });
-                row.col(|ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.add_space(VERTICAL_SPACING);
-                        if ui.button("Add new").clicked() {
+                        if ui
+                            .button("Add new path")
+                            .on_hover_text("Add new editor search path")
+                            .clicked()
+                        {
                             let directory = FileDialog::new().pick_folder();
                             if let Some(dir) = directory {
                                 self.hub
@@ -304,6 +309,7 @@ impl HubClient {
                         }
                     });
                 });
+                row.col(|_ui| {});
             });
         });
     }
@@ -316,11 +322,14 @@ impl HubClient {
                 row.col(|ui| {
                     add_header(ui);
                 });
-                row.col(|_ui| {});
                 row.col(|ui| {
                     ui.vertical_centered_justified(|ui| {
                         ui.add_space(VERTICAL_SPACING);
-                        if ui.button("Import").clicked() {
+                        if ui
+                            .button("Scan")
+                            .on_hover_text("Scan selected folder for projects")
+                            .clicked()
+                        {
                             let directory = FileDialog::new().pick_folder();
 
                             if let Some(dir) = directory {
@@ -348,6 +357,7 @@ impl HubClient {
                         }
                     });
                 });
+                row.col(|_ui| {});
             });
         });
     }
@@ -356,7 +366,6 @@ impl HubClient {
             Layout::top_down_justified(eframe::emath::Align::Min),
             |ui| {
                 ui.add_space(VERTICAL_SPACING);
-
                 let button = egui::Button::new(egui::RichText::new("📦 Projects").heading())
                     .frame(&self.current_tab == &WindowTab::Projects);
                 if ui
@@ -388,7 +397,7 @@ fn build_header_table(ui: &mut Ui) -> TableBuilder {
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
         .column(Size::remainder().at_least(150.0))
         .column(Size::initial(100.0).at_most(100.0))
-        .column(Size::initial(100.0).at_most(100.0))
+        .column(Size::initial(5.0).at_most(5.0))
         .resizable(false);
     table
 }

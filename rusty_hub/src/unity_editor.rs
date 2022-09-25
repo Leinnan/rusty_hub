@@ -40,11 +40,6 @@ impl UnityEditor {
                     version = Some(short.to_string());
                 }
             }
-            // println!(
-            //     "Printing info for {}: \n{:#?}\n\n",
-            //     base_path.display(),
-            //     hashmap
-            // );
         }
 
         if version.is_none() {
