@@ -275,22 +275,12 @@ impl HubClient {
             body.rows(text_height, 1, |_, mut row| {
                 row.col(|ui| {
                     add_header(ui);
-                });
+                });row.col(|_ui| {});
                 row.col(|ui| {
                     ui.vertical_centered_justified(|ui| {
                         ui.add_space(VERTICAL_SPACING);
                         if ui
                             .button("Import")
-                            .on_hover_text("Not implemented yet")
-                            .clicked()
-                        {}
-                    });
-                });
-                row.col(|ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.add_space(VERTICAL_SPACING);
-                        if ui
-                            .button("Create new")
                             .on_hover_text("Not implemented yet")
                             .clicked()
                         {}
