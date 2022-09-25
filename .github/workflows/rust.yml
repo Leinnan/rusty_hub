@@ -3,11 +3,11 @@ name: build
 on:
   push:
     branches: [ main, master ]
+    paths:
+      - 'egui_client/**'
+      - 'rusty_hub/**'
   pull_request:
     branches: [ main, master ]
-  paths:
-    - 'egui_client/**'
-    - 'rusty_hub/**'
 
 env:
   CARGO_TERM_COLOR: always
