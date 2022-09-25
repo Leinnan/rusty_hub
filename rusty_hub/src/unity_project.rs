@@ -1,4 +1,3 @@
-use registry::{Hive, Security};
 use std::{path::Path, str};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -9,7 +8,13 @@ pub struct UnityProject {
 }
 
 impl UnityProject {
+    #[cfg(not(target_os = "windows"))]
     pub fn get_projects_from_registry() -> Vec<UnityProject> {
+        Vec::new()
+    }
+    #[cfg(target_os = "windows")]
+    pub fn get_projects_from_registry() -> Vec<UnityProject> {
+        use registry::{Hive, Security};
         let mut projects = Vec::new();
 
         let key = Hive::CurrentUser
