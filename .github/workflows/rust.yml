@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install dep
-      run: sudo apt-get install -y libx11-dev
+      run: sudo apt-get install -y mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libatk1.0-dev librust-gdk-sys-dev
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
       with:
