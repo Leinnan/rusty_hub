@@ -1,6 +1,6 @@
 use crate::{
     consts::HOMEPAGE,
-    consts::{VERSION, VERTICAL_SPACING, APP_NAME},
+    consts::{APP_NAME, VERSION, VERTICAL_SPACING},
     window_tab::WindowTab,
 };
 use eframe::{
@@ -69,11 +69,14 @@ impl HubClient {
                             }
                         });
                     });
-                    row.col(|ui| {ui.with_layout(
-                        Layout::top_down_justified(eframe::emath::Align::Max),|ui| {
-                            ui.add_space(VERTICAL_SPACING);
-                            ui.label(&paths[row_index]);
-                        });
+                    row.col(|ui| {
+                        ui.with_layout(
+                            Layout::top_down_justified(eframe::emath::Align::Max),
+                            |ui| {
+                                ui.add_space(VERTICAL_SPACING);
+                                ui.label(&paths[row_index]);
+                            },
+                        );
                     });
                 });
             });
@@ -276,16 +279,21 @@ impl HubClient {
                 row.col(|ui| {
                     ui.vertical_centered_justified(|ui| {
                         ui.add_space(VERTICAL_SPACING);
-                        if ui.button("Import").on_hover_text("Not implemented yet").clicked() {
-                        }
+                        if ui
+                            .button("Import")
+                            .on_hover_text("Not implemented yet")
+                            .clicked()
+                        {}
                     });
                 });
                 row.col(|ui| {
                     ui.vertical_centered_justified(|ui| {
                         ui.add_space(VERTICAL_SPACING);
-                        if ui.button("Create new").on_hover_text("Not implemented yet").clicked() {
-                            
-                        }
+                        if ui
+                            .button("Create new")
+                            .on_hover_text("Not implemented yet")
+                            .clicked()
+                        {}
                     });
                 });
             });
