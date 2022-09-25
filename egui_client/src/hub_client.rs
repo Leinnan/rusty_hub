@@ -34,62 +34,109 @@ impl HubClient {
     pub fn draw_central_panel(&mut self, ctx: &egui::Context) {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                egui::Grid::new("some_unique_id")
-                    .striped(true)
-                    .min_row_height(45.0)
-                    .min_col_width(150.0)
-                    .max_col_width(1000.0)
-                    .num_columns(3)
-                    .show(ui, |ui| {
-                        match self.current_tab {
-                            WindowTab::Projects => (),
-                            WindowTab::Editors => self.draw_editors(&ctx, ui),
-                        };
-                    });
-
                 match self.current_tab {
                     WindowTab::Projects => self.draw_project(&ctx, ui),
-                    WindowTab::Editors => (),
+                    WindowTab::Editors => self.draw_editors(&ctx, ui),
                 };
             });
         });
     }
 
     fn draw_editors(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
-        ui.label("Editor search paths");
-        if ui.button("Add new").clicked() {
-            let directory = FileDialog::new().pick_folder();
-            if let Some(dir) = directory {
-                self.hub
-                    .config
-                    .unity_search_paths
-                    .push(dir.into_os_string().into_string().unwrap());
-                self.save_config(true);
+        ui.label(egui::RichText::new("Editor search paths").heading());
+        ui.add_space(VERTICAL_SPACING);
+        let text_height = egui::TextStyle::Body.resolve(&ui.style()).size * 2.0;
+
+        ui.scope(|ui| {
+            let table = TableBuilder::new(ui)
+                .striped(false)
+                .scroll(false)
+                .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                .column(Size::initial(150.0).at_least(150.0))
+                .column(Size::remainder().at_least(260.0))
+                .resizable(false);
+
+            let paths = self.hub.config.unity_search_paths.clone();
+            table.body(|body| {
+                body.rows(text_height, paths.len(), |row_index, mut row| {
+                    row.col(|ui| {
+                        ui.vertical_centered_justified(|ui| {
+                            ui.add_space(VERTICAL_SPACING - 2.0);
+                            if ui.button("Remove").clicked() {
+                                self.hub.config.unity_search_paths.remove(row_index);
+                                self.save_config(true);
+                                return;
+                            }
+                        });
+                    });
+                    row.col(|ui| {
+                        ui.vertical_centered_justified(|ui| {
+                            ui.add_space(VERTICAL_SPACING);
+                            ui.label(&paths[row_index]);
+                        });
+                    });
+                });
+            });
+        });
+        ui.vertical_centered_justified(|ui| {
+            if ui.button("Add new").clicked() {
+                let directory = FileDialog::new().pick_folder();
+                if let Some(dir) = directory {
+                    self.hub
+                        .config
+                        .unity_search_paths
+                        .push(dir.into_os_string().into_string().unwrap());
+                    self.save_config(true);
+                }
             }
-        }
-        if ui.button("Refresh").clicked() {
-            self.hub.config.rebuild();
-        }
-        ui.end_row();
-        let mut i = 0;
-        for editor in self.hub.config.unity_search_paths.clone() {
-            if ui.button("Remove").clicked() {
-                self.hub.config.unity_search_paths.remove(i);
-                self.save_config(true);
-                return;
+            if ui.button("Refresh").clicked() {
+                self.hub.config.rebuild();
             }
-            ui.label(editor);
-            ui.end_row();
-            i = i + 1;
-        }
-        ui.label("Installed editor versions");
-        ui.end_row();
-        for editor in &self.hub.config.editors_configurations {
-            ui.label(&editor.version);
-            ui.label(editor.platforms.join(","));
-            ui.label(&editor.base_path);
-            ui.end_row();
-        }
+        });
+        ui.add_space(VERTICAL_SPACING * 2.0);
+
+        ui.label(egui::RichText::new("Installed editor versions").heading());
+        ui.add_space(VERTICAL_SPACING);
+
+        let table2 = TableBuilder::new(ui)
+            .striped(true)
+            .scroll(false)
+            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+            .column(Size::initial(100.0).at_least(100.0).at_most(120.0))
+            .column(Size::initial(150.0).at_least(150.0).at_most(400.0))
+            .column(Size::remainder().at_least(260.0))
+            .resizable(false);
+
+        table2.body(|body| {
+            body.rows(
+                text_height,
+                self.hub.config.editors_configurations.len(),
+                |row_index, mut row| {
+                    let editor = &self.hub.config.editors_configurations[row_index];
+                    row.col(|ui| {
+                        ui.vertical_centered_justified(|ui| {
+                            ui.add_space(VERTICAL_SPACING);
+                            ui.label(&editor.version);
+                        });
+                    });
+                    row.col(|ui| {
+                        ui.vertical_centered_justified(|ui| {
+                            ui.add_space(VERTICAL_SPACING);
+                            ui.label(egui::RichText::new(editor.platforms.join(",")).small());
+                        });
+                    });
+                    row.col(|ui| {
+                        ui.with_layout(
+                            Layout::top_down_justified(eframe::emath::Align::Max),
+                            |ui| {
+                                ui.add_space(VERTICAL_SPACING);
+                                ui.label(&editor.base_path);
+                            },
+                        );
+                    });
+                },
+            );
+        });
     }
     fn draw_project(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
         let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.0;
