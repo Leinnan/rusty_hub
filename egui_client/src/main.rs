@@ -1,14 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 extern crate confy;
-use eframe::{
-    egui,
-    IconData, NativeOptions,
-};
+use eframe::{egui, IconData, NativeOptions};
 use std::io::Cursor;
 
+mod consts;
 mod hub_client;
 mod window_tab;
-mod consts;
 
 fn main() {
     let img = image::io::Reader::new(Cursor::new(include_bytes!("../static/hub.png")))

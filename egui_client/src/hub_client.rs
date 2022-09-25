@@ -1,20 +1,23 @@
-use rfd::FileDialog;
-use rusty_hub::hub::Hub;
+use crate::{
+    consts::HOMEPAGE,
+    consts::{VERSION, VERTICAL_SPACING},
+    window_tab::WindowTab,
+};
 use eframe::{
     egui::{self, Layout, Ui},
-    epaint::Color32
+    epaint::Color32,
 };
 use egui_extras::{Size, TableBuilder};
-use crate::{window_tab::WindowTab, consts::VERSION, consts::HOMEPAGE};
+use rfd::FileDialog;
+use rusty_hub::hub::Hub;
 
 pub struct HubClient {
     hub: Hub,
     current_tab: WindowTab,
 }
 
-
 impl HubClient {
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         Self {
             hub: confy::load("lwa_unity_hub", "config").unwrap(),
             current_tab: WindowTab::Projects,
@@ -103,12 +106,15 @@ impl HubClient {
             .header(20.0, |mut header| {
                 header.col(|ui| {
                     ui.heading("Name");
+                    ui.add_space(VERTICAL_SPACING);
                 });
                 header.col(|ui| {
                     ui.heading("Version");
+                    ui.add_space(VERTICAL_SPACING);
                 });
                 header.col(|ui| {
                     ui.heading("Directory");
+                    ui.add_space(VERTICAL_SPACING);
                 });
             })
             .body(|body| {
@@ -120,10 +126,13 @@ impl HubClient {
                         let editor_for_project_exists =
                             self.hub.editor_for_project(project).is_some();
                         row.col(|ui| {
-                            ui.set_enabled(editor_for_project_exists);
                             ui.vertical_centered_justified(|ui| {
+                                ui.add_space(VERTICAL_SPACING - 2.0);
                                 if ui
-                                    .button(format!("{}", &project.title))
+                                    .add_enabled(
+                                        editor_for_project_exists,
+                                        egui::Button::new(format!("{}", &project.title)),
+                                    )
                                     .on_disabled_hover_text(format!(
                                         "Select different Unity version"
                                     ))
@@ -131,13 +140,14 @@ impl HubClient {
                                 {
                                     self.hub.run_project_nr(row_index);
                                 }
+                                ui.add_space(VERTICAL_SPACING);
                             });
-                            ui.set_enabled(true);
                         });
                         row.col(|ui| {
                             ui.with_layout(
                                 Layout::top_down_justified(eframe::emath::Align::Center),
                                 |ui| {
+                                    ui.add_space(VERTICAL_SPACING);
                                     let mut text = egui::RichText::new(&project.version);
                                     if !editor_for_project_exists {
                                         text = text.color(Color32::RED);
@@ -146,10 +156,14 @@ impl HubClient {
                                         ui.add(egui::Label::new(text).sense(egui::Sense::click()));
                                     version_response.context_menu(|ui| {
                                         for editor in &self.hub.config.editors_configurations {
-                                            if ui
-                                                .button(format!("Open in {}", &editor.version))
-                                                .clicked()
-                                            {
+                                            let mut text = egui::RichText::new(format!(
+                                                "Open in {}",
+                                                &editor.version
+                                            ));
+                                            if editor.version.contains(&project.version) {
+                                                text = text.strong().color(Color32::GREEN);
+                                            }
+                                            if ui.button(text).clicked() {
                                                 Hub::run_project(&editor, &project);
                                                 ui.close_menu();
                                             }
@@ -159,15 +173,25 @@ impl HubClient {
                             );
                         });
                         row.col(|ui| {
-                            let path_response =
-                                ui.add(egui::Label::new(&project.path).sense(egui::Sense::click()));
-                            path_response.context_menu(|ui| {
-                                if ui.button("Open directory").clicked() {
-                                    use std::process::Command;
-                                    Command::new("explorer").arg(&project.path).spawn().unwrap();
-                                    ui.close_menu();
-                                }
-                            });
+                            ui.with_layout(
+                                Layout::top_down_justified(eframe::emath::Align::Max),
+                                |ui| {
+                                    ui.add_space(VERTICAL_SPACING);
+                                    let path_response = ui.add(
+                                        egui::Label::new(&project.path).sense(egui::Sense::click()),
+                                    );
+                                    path_response.context_menu(|ui| {
+                                        if ui.button("Open directory").clicked() {
+                                            use std::process::Command;
+                                            Command::new("explorer")
+                                                .arg(&project.path)
+                                                .spawn()
+                                                .unwrap();
+                                            ui.close_menu();
+                                        }
+                                    });
+                                },
+                            );
                         });
                     },
                 );
@@ -187,7 +211,7 @@ impl eframe::App for HubClient {
             .resizable(false)
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
-                    ui.add_space(5.0);
+                    ui.add_space(VERTICAL_SPACING);
 
                     let button =
                         egui::Button::new(egui::RichText::new("Projects").heading()).frame(false);
@@ -197,7 +221,7 @@ impl eframe::App for HubClient {
                     {
                         self.current_tab = WindowTab::Projects;
                     }
-                    ui.add_space(5.0);
+                    ui.add_space(VERTICAL_SPACING);
                     if ui
                         .add_enabled(
                             &self.current_tab != &WindowTab::Editors,
@@ -212,8 +236,9 @@ impl eframe::App for HubClient {
             });
         self.draw_central_panel(&ctx);
         egui::TopBottomPanel::bottom("bottomPanel").show(ctx, |ui| {
-            ui.with_layout(Layout::top_down(eframe::emath::Align::Max), |ui| {
-                ui.hyperlink_to(format!("v {}", VERSION), HOMEPAGE)
+            ui.with_layout(Layout::right_to_left(eframe::emath::Align::Center), |ui| {
+                egui::widgets::global_dark_light_mode_switch(ui);
+                ui.hyperlink_to(format!("v {}", VERSION), HOMEPAGE);
             });
         });
     }
