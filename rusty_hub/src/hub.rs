@@ -15,6 +15,13 @@ impl Hub {
         Self { config, projects }
     }
 
+    pub fn update_info(&mut self) {
+        self.config.rebuild();
+        for project in self.projects.iter_mut() {
+            project.update_info();
+        }
+    }
+
     pub fn run_project_nr(&self, nr: usize) {
         let project = self.projects[nr].clone();
 

@@ -18,15 +18,24 @@ pub struct HubClient {
 
 impl HubClient {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        Self {
-            hub: confy::load("lwa_unity_hub", "config").unwrap(),
+        let hub_option = confy::load("lwa_unity_hub", "config");
+
+        let hub = if hub_option.is_ok() {
+            hub_option.unwrap()
+        } else {
+            Hub::default()
+        };
+        let mut client = Self {
+            hub,
             current_tab: WindowTab::Projects,
-        }
+        };
+        client.save_config(true);
+        client
     }
 
     fn save_config(&mut self, rebuild: bool) {
         if rebuild {
-            self.hub.config.rebuild();
+            self.hub.update_info();
         }
         let _ = confy::store("lwa_unity_hub", "config", &self.hub);
     }
@@ -134,17 +143,22 @@ impl HubClient {
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
             .column(Size::initial(150.0).at_least(150.0))
             .column(Size::initial(90.0).at_least(40.0))
+            .column(Size::initial(90.0).at_least(90.0))
             .column(Size::remainder().at_least(260.0))
             .resizable(false);
 
         table
-            .header(20.0, |mut header| {
+            .header(25.0, |mut header| {
                 header.col(|ui| {
                     ui.heading("Name");
                     ui.add_space(VERTICAL_SPACING);
                 });
                 header.col(|ui| {
                     ui.heading("Version");
+                    ui.add_space(VERTICAL_SPACING);
+                });
+                header.col(|ui| {
+                    ui.heading("Branch");
                     ui.add_space(VERTICAL_SPACING);
                 });
                 header.col(|ui| {
@@ -211,6 +225,32 @@ impl HubClient {
                             ui.with_layout(
                                 Layout::top_down_justified(eframe::emath::Align::Max),
                                 |ui| {
+                                    if project.branch.len() < 1 {
+                                        return;
+                                    }
+                                    ui.add_space(VERTICAL_SPACING);
+                                    const MAX_BRANCH_LEN: usize = 15;
+                                    let is_long = project.branch.len() > MAX_BRANCH_LEN;
+                                    let short = if !is_long {
+                                        project.branch.clone()
+                                    } else {
+                                        let mut result =
+                                            String::from(&project.branch[0..MAX_BRANCH_LEN]);
+                                        result.push_str("...");
+                                        result
+                                    };
+
+                                    let label = ui.label(egui::RichText::new(short).small());
+                                    if is_long {
+                                        label.on_hover_text(&project.branch);
+                                    }
+                                },
+                            );
+                        });
+                        row.col(|ui| {
+                            ui.with_layout(
+                                Layout::top_down_justified(eframe::emath::Align::Max),
+                                |ui| {
                                     ui.add_space(VERTICAL_SPACING);
                                     let path_response = ui.add(
                                         egui::Label::new(&project.path).sense(egui::Sense::click()),
@@ -245,7 +285,7 @@ impl HubClient {
                     ui.vertical_centered_justified(|ui| {
                         ui.add_space(VERTICAL_SPACING);
                         if ui.button("Refresh").clicked() {
-                            self.hub.config.rebuild();
+                            self.hub.update_info();
                         }
                     });
                 });

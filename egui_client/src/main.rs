@@ -26,7 +26,7 @@ fn main() {
         fullscreen: false,
         drag_and_drop_support: false,
         initial_window_size: Some(egui::vec2(820.0, 400.0)),
-        min_window_size: Some(egui::vec2(420.0, 400.0)),
+        min_window_size: Some(egui::vec2(720.0, 400.0)),
         icon_data: Some(icon),
         ..NativeOptions::default()
     };

@@ -5,6 +5,8 @@ pub struct UnityProject {
     pub path: String,
     pub title: String,
     pub version: String,
+    pub branch: String,
+    pub is_valid: bool,
 }
 
 impl PartialEq for UnityProject {
@@ -52,16 +54,23 @@ impl UnityProject {
         projects
     }
 
+    fn is_project_at_path(path: &str) -> bool {
+        let one = Path::new(&path).join("ProjectSettings");
+        let two = one.join("ProjectVersion.txt");
+
+        std::fs::metadata(&one).is_ok() && std::fs::metadata(&two).is_ok()
+    }
+
     pub fn try_get_project_at_path(path: &str) -> Option<UnityProject> {
         let path = path.trim_matches(char::from(0)).replace("/", "\\");
-        let second_path = Path::new(&path).join("ProjectSettings");
-        if std::fs::metadata(&second_path).is_err() {
+        if !UnityProject::is_project_at_path(&path) {
             return None;
         }
-        let project_version_file = std::fs::read_to_string(second_path.join("ProjectVersion.txt"));
-        if project_version_file.is_err() {
-            return None;
-        }
+        let project_version_file = std::fs::read_to_string(
+            Path::new(&path)
+                .join("ProjectSettings")
+                .join("ProjectVersion.txt"),
+        );
         let project_version_file = project_version_file.unwrap();
         let mut iter = project_version_file.split_whitespace();
         iter.next();
@@ -71,6 +80,34 @@ impl UnityProject {
             path: path.to_string(),
             title: path.split("\\").last().unwrap().to_string(),
             version: project_version,
+            branch: String::new(),
+            is_valid: true,
         })
+    }
+
+    pub fn update_info(&mut self) {
+        const HEAD_PREFIX: &str = "ref: refs/heads/";
+
+        let is_project = UnityProject::is_project_at_path(&self.path);
+        self.is_valid = is_project;
+
+        if !is_project {
+            return;
+        }
+
+        let mut base_path = Path::new(&self.path);
+
+        while let Some(path) = base_path.parent() {
+            base_path = path;
+            let head_path = Path::new(&path).join(".git").join("HEAD");
+            if !head_path.exists() {
+                continue;
+            }
+            let head_content =
+                std::fs::read_to_string(&head_path).expect("Could not read HEAD file");
+            if head_content.contains(HEAD_PREFIX) {
+                self.branch = head_content.replace(HEAD_PREFIX, "").trim().to_string();
+            }
+        }
     }
 }
