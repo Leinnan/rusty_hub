@@ -7,6 +7,12 @@ pub struct UnityProject {
     pub version: String,
 }
 
+impl PartialEq for UnityProject {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+    }
+}
+
 impl UnityProject {
     #[cfg(not(target_os = "windows"))]
     pub fn get_projects_from_registry() -> Vec<UnityProject> {
@@ -37,7 +43,7 @@ impl UnityProject {
 
             if let registry::value::Data::Binary(data) = &val.data() {
                 let project_path = str::from_utf8(&data).unwrap().to_string();
-                if let Some(result) = UnityProject::get_project_at_path(&project_path) {
+                if let Some(result) = UnityProject::try_get_project_at_path(&project_path) {
                     projects.push(result);
                 }
                 println!("\t{}: {}", unwraped_name, project_path);
@@ -46,7 +52,7 @@ impl UnityProject {
         projects
     }
 
-    fn get_project_at_path(path: &str) -> Option<UnityProject> {
+    pub fn try_get_project_at_path(path: &str) -> Option<UnityProject> {
         let path = path.trim_matches(char::from(0)).replace("/", "\\");
         let second_path = Path::new(&path).join("ProjectSettings");
         if std::fs::metadata(&second_path).is_err() {

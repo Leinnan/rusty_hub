@@ -275,15 +275,37 @@ impl HubClient {
             body.rows(text_height, 1, |_, mut row| {
                 row.col(|ui| {
                     add_header(ui);
-                });row.col(|_ui| {});
+                });
+                row.col(|_ui| {});
                 row.col(|ui| {
                     ui.vertical_centered_justified(|ui| {
                         ui.add_space(VERTICAL_SPACING);
-                        if ui
-                            .button("Import")
-                            .on_hover_text("Not implemented yet")
-                            .clicked()
-                        {}
+                        if ui.button("Import").clicked() {
+                            let directory = FileDialog::new().pick_folder();
+
+                            if let Some(dir) = directory {
+                                let amount = self.hub.search_for_projects_at_path(&dir);
+                                let mut message =
+                                    rfd::MessageDialog::new().set_title("Search ended");
+
+                                match amount {
+                                    0 => {
+                                        message = message
+                                            .set_description("No new projects found.")
+                                            .set_level(rfd::MessageLevel::Warning)
+                                    }
+                                    1 => message = message.set_description("Project founded!"),
+                                    _ => {
+                                        message = message.set_description(&format!(
+                                            "Founded {} projects.",
+                                            amount
+                                        ))
+                                    }
+                                }
+                                message.show();
+                                self.save_config(true);
+                            }
+                        }
                     });
                 });
             });
