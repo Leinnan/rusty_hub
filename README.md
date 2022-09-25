@@ -1,4 +1,4 @@
-# Rusty Hub
+# Rusty Hub [![build](https://github.com/Leinnan/rusty_hub/actions/workflows/rust.yml/badge.svg)](https://github.com/Leinnan/rusty_hub/actions/workflows/rust.yml)
 
 Very simple alternative for Unity Hub. Rust pet project.
 
