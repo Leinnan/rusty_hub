@@ -76,7 +76,7 @@ struct MyApp {
 
 impl MyApp {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        setup_custom_fonts(&cc.egui_ctx);
+        //setup_custom_fonts(&cc.egui_ctx);
         Self {
             hub: confy::load("lwa_unity_hub", "config").unwrap(),
             current_tab: WindowTab::Projects,
