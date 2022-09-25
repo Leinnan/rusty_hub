@@ -24,3 +24,5 @@ cargo run --release
 Big thanks to https://github.com/unitycoder/UnityLauncherPro 
 
 Most of the required information about how data is stored by Unity HUB is taken from there.
+
+Thanks for the icon to the [Papirus Development Team](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme/)
