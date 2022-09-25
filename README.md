@@ -1,4 +1,4 @@
-# rusty_hub
+# Rusty Hub
 
 Very simple alternative for Unity Hub. Rust pet project.
 
