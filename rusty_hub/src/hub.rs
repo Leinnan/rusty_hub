@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use crate::{config::Configuration, unity_project::UnityProject, unity_editor::UnityEditor};
+use crate::{config::Configuration, unity_editor::UnityEditor, unity_project::UnityProject};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Hub {
@@ -34,11 +34,11 @@ impl Hub {
 
     pub fn run_project(editor: &UnityEditor, project: &UnityProject) {
         println!("{} -projectpath {}", editor.exe_path, project.path);
-            Command::new(&editor.exe_path)
-                .arg("-projectpath")
-                .arg(&project.path)
-                .spawn()
-                .expect("Failed to run project");
+        Command::new(&editor.exe_path)
+            .arg("-projectpath")
+            .arg(&project.path)
+            .spawn()
+            .expect("Failed to run project");
     }
 }
 impl Default for Hub {

@@ -12,6 +12,12 @@ pub struct UnityEditor {
     pub platforms: Vec<String>,
 }
 
+impl PartialEq for UnityEditor {
+    fn eq(&self, other: &Self) -> bool {
+        self.exe_path == other.exe_path
+    }
+}
+
 impl UnityEditor {
     pub fn new(path: &str) -> Option<Self> {
         let base_path = Path::new(path);

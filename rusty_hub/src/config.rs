@@ -14,8 +14,12 @@ impl Configuration {
         let paths = self.get_unity_paths();
         for path in &paths {
             let editor = UnityEditor::new(&path);
-            if editor.is_some() {
-                self.editors_configurations.push(editor.unwrap());
+            if editor.is_none() {
+                continue;
+            }
+            let editor = editor.unwrap();
+            if !self.editors_configurations.contains(&editor) {
+                self.editors_configurations.push(editor);
             }
         }
     }
