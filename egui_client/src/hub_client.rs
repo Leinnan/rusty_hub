@@ -299,6 +299,34 @@ impl HubClient {
             });
         });
     }
+    fn draw_side_panel(&mut self, ui: &mut Ui) {
+        ui.with_layout(
+            Layout::top_down_justified(eframe::emath::Align::Min),
+            |ui| {
+                ui.add_space(VERTICAL_SPACING);
+
+                let button = egui::Button::new(egui::RichText::new("📦 Projects").heading())
+                    .frame(&self.current_tab == &WindowTab::Projects);
+                if ui
+                    .add_enabled(&self.current_tab != &WindowTab::Projects, button)
+                    .clicked()
+                {
+                    self.current_tab = WindowTab::Projects;
+                }
+                ui.add_space(VERTICAL_SPACING);
+                if ui
+                    .add_enabled(
+                        &self.current_tab != &WindowTab::Editors,
+                        egui::Button::new(egui::RichText::new("🛠 Editors").heading())
+                            .frame(&self.current_tab == &WindowTab::Editors),
+                    )
+                    .clicked()
+                {
+                    self.current_tab = WindowTab::Editors;
+                }
+            },
+        );
+    }
 }
 
 fn build_header_table(ui: &mut Ui) -> TableBuilder {
@@ -320,7 +348,6 @@ fn add_header(ui: &mut Ui) {
             ui.add_space(5.0);
             let text = egui::RichText::new(APP_NAME).heading().strong();
             ui.add(egui::Label::new(text));
-            ui.add_space(5.0);
         },
     );
 }
@@ -344,35 +371,16 @@ impl eframe::App for HubClient {
             .resizable(false)
             .frame(egui::Frame::canvas(&ctx.style()))
             .show(ctx, |ui| {
-                ui.vertical_centered_justified(|ui| {
-                    ui.add_space(VERTICAL_SPACING);
-
-                    let button = egui::Button::new(egui::RichText::new("Projects").heading())
-                        .frame(&self.current_tab == &WindowTab::Projects);
-                    if ui
-                        .add_enabled(&self.current_tab != &WindowTab::Projects, button)
-                        .clicked()
-                    {
-                        self.current_tab = WindowTab::Projects;
-                    }
-                    ui.add_space(VERTICAL_SPACING);
-                    if ui
-                        .add_enabled(
-                            &self.current_tab != &WindowTab::Editors,
-                            egui::Button::new(egui::RichText::new("Editors").heading())
-                                .frame(&self.current_tab == &WindowTab::Editors),
-                        )
-                        .clicked()
-                    {
-                        self.current_tab = WindowTab::Editors;
-                    }
-                });
+                self.draw_side_panel(ui);
             });
         self.draw_central_panel(&ctx);
         egui::TopBottomPanel::bottom("bottomPanel").show(ctx, |ui| {
             ui.with_layout(Layout::right_to_left(eframe::emath::Align::Center), |ui| {
                 egui::widgets::global_dark_light_mode_switch(ui);
-                ui.hyperlink_to(format!("v {}", VERSION), HOMEPAGE);
+                ui.hyperlink_to(
+                    format!("{} v {}", egui::special_emojis::GITHUB, VERSION),
+                    HOMEPAGE,
+                );
             });
         });
     }
