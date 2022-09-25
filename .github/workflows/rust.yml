@@ -41,4 +41,4 @@ jobs:
         cache-on-failure: ""
     - uses: actions/checkout@v2
     - name: Build
-      run: cd egui-client && cargo build --verbose
+      run: cd egui_client && cargo build --verbose
