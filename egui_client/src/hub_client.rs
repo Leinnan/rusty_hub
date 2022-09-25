@@ -1,6 +1,6 @@
 use crate::{
     consts::HOMEPAGE,
-    consts::{VERSION, VERTICAL_SPACING},
+    consts::{VERSION, VERTICAL_SPACING, APP_NAME},
     window_tab::WindowTab,
 };
 use eframe::{
@@ -69,29 +69,14 @@ impl HubClient {
                             }
                         });
                     });
-                    row.col(|ui| {
-                        ui.vertical_centered_justified(|ui| {
+                    row.col(|ui| {ui.with_layout(
+                        Layout::top_down_justified(eframe::emath::Align::Max),|ui| {
                             ui.add_space(VERTICAL_SPACING);
                             ui.label(&paths[row_index]);
                         });
                     });
                 });
             });
-        });
-        ui.vertical_centered_justified(|ui| {
-            if ui.button("Add new").clicked() {
-                let directory = FileDialog::new().pick_folder();
-                if let Some(dir) = directory {
-                    self.hub
-                        .config
-                        .unity_search_paths
-                        .push(dir.into_os_string().into_string().unwrap());
-                    self.save_config(true);
-                }
-            }
-            if ui.button("Refresh").clicked() {
-                self.hub.config.rebuild();
-            }
         });
         ui.add_space(VERTICAL_SPACING * 2.0);
 
@@ -147,7 +132,7 @@ impl HubClient {
             .column(Size::initial(150.0).at_least(150.0))
             .column(Size::initial(90.0).at_least(40.0))
             .column(Size::remainder().at_least(260.0))
-            .resizable(true);
+            .resizable(false);
 
         table
             .header(20.0, |mut header| {
@@ -244,24 +229,118 @@ impl HubClient {
                 );
             });
     }
+
+    fn draw_editors_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
+        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.0;
+        let table = build_header_table(ui);
+        table.body(|body| {
+            body.rows(text_height, 1, |_, mut row| {
+                row.col(|ui| {
+                    add_header(ui);
+                });
+                row.col(|ui| {
+                    ui.vertical_centered_justified(|ui| {
+                        ui.add_space(VERTICAL_SPACING);
+                        if ui.button("Refresh").clicked() {
+                            self.hub.config.rebuild();
+                        }
+                    });
+                });
+                row.col(|ui| {
+                    ui.vertical_centered_justified(|ui| {
+                        ui.add_space(VERTICAL_SPACING);
+                        if ui.button("Add new").clicked() {
+                            let directory = FileDialog::new().pick_folder();
+                            if let Some(dir) = directory {
+                                self.hub
+                                    .config
+                                    .unity_search_paths
+                                    .push(dir.into_os_string().into_string().unwrap());
+                                self.save_config(true);
+                            }
+                        }
+                    });
+                });
+            });
+        });
+    }
+
+    fn draw_project_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
+        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.0;
+        let table = build_header_table(ui);
+        table.body(|body| {
+            body.rows(text_height, 1, |_, mut row| {
+                row.col(|ui| {
+                    add_header(ui);
+                });
+                row.col(|ui| {
+                    ui.vertical_centered_justified(|ui| {
+                        ui.add_space(VERTICAL_SPACING);
+                        if ui.button("Import").on_hover_text("Not implemented yet").clicked() {
+                        }
+                    });
+                });
+                row.col(|ui| {
+                    ui.vertical_centered_justified(|ui| {
+                        ui.add_space(VERTICAL_SPACING);
+                        if ui.button("Create new").on_hover_text("Not implemented yet").clicked() {
+                            
+                        }
+                    });
+                });
+            });
+        });
+    }
+}
+
+fn build_header_table(ui: &mut Ui) -> TableBuilder {
+    let table = TableBuilder::new(ui)
+        .striped(false)
+        .scroll(false)
+        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+        .column(Size::remainder().at_least(150.0))
+        .column(Size::initial(100.0).at_most(100.0))
+        .column(Size::initial(100.0).at_most(100.0))
+        .resizable(false);
+    table
+}
+
+fn add_header(ui: &mut Ui) {
+    ui.with_layout(
+        Layout::top_down_justified(eframe::emath::Align::Min),
+        |ui| {
+            ui.add_space(5.0);
+            let text = egui::RichText::new(APP_NAME).heading().strong();
+            ui.add(egui::Label::new(text));
+            ui.add_space(5.0);
+        },
+    );
 }
 
 impl eframe::App for HubClient {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        egui::TopBottomPanel::top("topPanel").show(ctx, |ui| {
-            ui.add_space(5.0);
-            let text = egui::RichText::new(" Rusty Unity Hub").heading().strong();
-            ui.add(egui::Label::new(text));
-            ui.add_space(5.0);
-        });
+        egui::TopBottomPanel::top("topPanel")
+            .frame(egui::Frame::canvas(&ctx.style()))
+            .show(ctx, |ui| {
+                ui.horizontal(|ui| {
+                    ui.add_space(14.0);
+                    match self.current_tab {
+                        WindowTab::Projects => self.draw_project_header(&ctx, ui),
+                        WindowTab::Editors => self.draw_editors_header(&ctx, ui),
+                    };
+                    ui.add_space(14.0);
+                });
+            });
+
         egui::SidePanel::left("dsadsa")
             .resizable(false)
+            .frame(egui::Frame::canvas(&ctx.style()))
             .show(ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     ui.add_space(VERTICAL_SPACING);
 
-                    let button =
-                        egui::Button::new(egui::RichText::new("Projects").heading()).frame(false);
+                    let button = egui::Button::new(egui::RichText::new("Projects").heading())
+                        .frame(&self.current_tab == &WindowTab::Projects);
                     if ui
                         .add_enabled(&self.current_tab != &WindowTab::Projects, button)
                         .clicked()
@@ -273,7 +352,7 @@ impl eframe::App for HubClient {
                         .add_enabled(
                             &self.current_tab != &WindowTab::Editors,
                             egui::Button::new(egui::RichText::new("Editors").heading())
-                                .frame(false),
+                                .frame(&self.current_tab == &WindowTab::Editors),
                         )
                         .clicked()
                     {

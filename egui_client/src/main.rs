@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 extern crate confy;
+use consts::{APP_NAME, VERSION};
 use eframe::{egui, IconData, NativeOptions};
 use std::io::Cursor;
 
@@ -30,7 +31,7 @@ fn main() {
         ..NativeOptions::default()
     };
     eframe::run_native(
-        "Rusty Hub",
+        &format!("{} v {}", APP_NAME, VERSION),
         options,
         Box::new(|cc| Box::new(crate::hub_client::HubClient::new(cc))),
     );
