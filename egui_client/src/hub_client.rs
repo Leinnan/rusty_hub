@@ -269,7 +269,7 @@ impl HubClient {
                                     path_response.context_menu(|ui| {
                                         if ui.button("Open directory").clicked() {
                                             use std::process::Command;
-                                            Command::new("explorer")
+                                            Command::new(rusty_hub::consts::FILE_MANAGER)
                                                 .arg(&project.path)
                                                 .spawn()
                                                 .unwrap();

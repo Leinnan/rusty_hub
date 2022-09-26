@@ -1,5 +1,4 @@
-use exe::pe::VecPE;
-use exe::VSVersionInfo;
+
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::path::Path;
@@ -24,16 +23,22 @@ impl UnityEditor {
     pub fn new(path: &str) -> Option<Self> {
         let base_path = Path::new(path);
         let exe_path = base_path.join(consts::UNITY_EXE_NAME);
-        if !std::fs::metadata(&exe_path).is_ok() {
+        let meta = std::fs::metadata(&exe_path);
+        if !meta.is_ok() || !meta.unwrap().is_file() {
             return None;
         }
 
+        let mut version :Option<String> = None;
+
+        #[cfg(windows)]
+        {
+            use exe::pe::VecPE;
+            use exe::VSVersionInfo;
         let image = VecPE::from_disk_file(&exe_path).unwrap();
-        let vs_version_check = VSVersionInfo::parse(&image);
+            let vs_version_check = VSVersionInfo::parse(&image);
         if vs_version_check.is_err() {
             return None;
         }
-        let mut version = None;
         if let Some(string_file_info) = vs_version_check.unwrap().string_file_info {
             let hashmap = string_file_info.children[0].string_map();
             if let Some(result_version) = hashmap.get("ProductVersion") {
@@ -42,18 +47,22 @@ impl UnityEditor {
                     version = Some(short.to_string());
                 }
             }
+        }}
+        if version.is_none() {
+            let folder = base_path.to_str().expect("Fail").split(consts::SLASH).last().unwrap();
+            version = Some(folder.to_string());
         }
 
         if version.is_none() {
-            None
-        } else {
-            Some(Self {
-                version: version.unwrap().clone(),
-                exe_path: exe_path.into_os_string().into_string().unwrap(),
-                base_path: String::from(path),
-                platforms: UnityEditor::get_platforms(path),
-            })
+            return None;
         }
+        Some(Self {
+            version: version.unwrap().clone(),
+            exe_path: exe_path.into_os_string().into_string().unwrap(),
+            base_path: String::from(path),
+            platforms: UnityEditor::get_platforms(path),
+        })
+        
     }
 
     fn get_platforms(unity_folder: &str) -> Vec<String> {

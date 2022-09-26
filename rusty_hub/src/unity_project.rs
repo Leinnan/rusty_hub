@@ -1,5 +1,7 @@
 use std::{ops::Sub, path::Path, str};
 
+use crate::consts;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnityProject {
     pub path: String,
@@ -61,7 +63,10 @@ impl UnityProject {
     }
 
     pub fn try_get_project_at_path(path: &str) -> Option<UnityProject> {
+        #[cfg(windows)]
         let path = path.trim_matches(char::from(0)).replace("/", "\\");
+        #[cfg(unix)]
+        let path = path.trim_matches(char::from(0));
         if !UnityProject::is_project_at_path(&path) {
             return None;
         }
@@ -77,7 +82,7 @@ impl UnityProject {
 
         let mut project = UnityProject {
             path: path.to_string(),
-            title: path.split("\\").last().unwrap().to_string(),
+            title: path.split(consts::SLASH).last().unwrap().to_string(),
             version: project_version,
             branch: String::new(),
             is_valid: true,
