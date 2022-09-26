@@ -1701,18 +1701,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rusty_hub"
-version = "0.1.0"
-dependencies = [
- "dpc-pariter",
- "exe",
- "registry",
- "serde",
- "serde_derive",
- "walkdir",
-]
-
-[[package]]
 name = "rusty_hub_egui"
 version = "0.2.0"
 dependencies = [
@@ -1721,7 +1709,7 @@ dependencies = [
  "egui_extras",
  "image",
  "rfd",
- "rusty_hub",
+ "unity_hub_lib",
  "winres",
 ]
 
@@ -2052,6 +2040,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5c5713f0fc4b5db668a2ac63cdb7bb4469d8c9fed047b1d0292cc7b0ce2ba921"
 dependencies = [
  "tinyvec",
+]
+
+[[package]]
+name = "unity_hub_lib"
+version = "0.2.0"
+dependencies = [
+ "dpc-pariter",
+ "exe",
+ "registry",
+ "serde",
+ "serde_derive",
+ "walkdir",
 ]
 
 [[package]]

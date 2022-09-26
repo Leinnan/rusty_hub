@@ -9,7 +9,7 @@ use eframe::{
 };
 use egui_extras::{Size, TableBuilder};
 use rfd::FileDialog;
-use rusty_hub::hub::Hub;
+use unity_hub_lib::{consts::FILE_MANAGER, hub::Hub};
 
 pub struct HubClient {
     hub: Hub,
@@ -18,7 +18,7 @@ pub struct HubClient {
 
 impl HubClient {
     pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        let hub_option = confy::load("lwa_unity_hub", "config");
+        let hub_option = confy::load("rusty_hub_egui", "config");
 
         let hub = if hub_option.is_ok() {
             let mut h: Hub = hub_option.unwrap();
@@ -27,6 +27,7 @@ impl HubClient {
         } else {
             Hub::default()
         };
+
         let client = Self {
             hub,
             current_tab: WindowTab::Projects,
@@ -39,7 +40,7 @@ impl HubClient {
         if rebuild {
             self.hub.update_data();
         }
-        let _ = confy::store("lwa_unity_hub", "config", &self.hub);
+        let _ = confy::store("rusty_hub_egui", "config", &self.hub);
     }
 
     pub fn draw_central_panel(&mut self, ctx: &egui::Context) {
@@ -269,7 +270,7 @@ impl HubClient {
                                     path_response.context_menu(|ui| {
                                         if ui.button("Open directory").clicked() {
                                             use std::process::Command;
-                                            Command::new(rusty_hub::consts::FILE_MANAGER)
+                                            Command::new(FILE_MANAGER)
                                                 .arg(&project.path)
                                                 .spawn()
                                                 .unwrap();

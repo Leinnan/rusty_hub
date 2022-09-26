@@ -12,11 +12,11 @@ There is ready to download Windows version. Go to [Releases](https://github.com/
 
 [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html) is required in order to build it.
 
-Building is pretty simple, just copy repo, open `egui_client` subdirectory in `CLI` client and run these commands:
+Building is pretty simple, just copy repo, open `rusty_hub_egui` subdirectory in `CLI` client and run these commands:
 
 ```sh
 git clone git@github.com:Leinnan/rusty_hub.git
-cd rusty_hub/egui_client
+cd rusty_hub/rusty_hub_egui
 cargo build --release
 cargo run --release
 ```

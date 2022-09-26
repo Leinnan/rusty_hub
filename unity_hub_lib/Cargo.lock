@@ -371,8 +371,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "rusty_hub"
-version = "0.1.0"
+name = "rusty_hub_lib"
+version = "0.2.0"
 dependencies = [
  "dpc-pariter",
  "exe",

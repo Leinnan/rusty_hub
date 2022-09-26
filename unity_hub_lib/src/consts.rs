@@ -15,3 +15,10 @@ pub const FILE_MANAGER: &str = "explorer";
 pub const FILE_MANAGER: &str = "open";
 #[cfg(target_os = "linux")]
 pub const FILE_MANAGER: &str = "xdg-open";
+
+#[cfg(windows)]
+pub const TEMPLATES_DIR: &str = "Data\\Resources\\PackageManager\\ProjectTemplates";
+#[cfg(target_os = "macos")]
+pub const TEMPLATES_DIR: &str = "Contents/Resources/PackageManager/ProjectTemplates";
+#[cfg(target_os = "linux")]
+pub const TEMPLATES_DIR: &str = "Data/Resources/PackageManager/ProjectTemplates";

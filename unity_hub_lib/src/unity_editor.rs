@@ -1,8 +1,8 @@
+use crate::consts;
+use crate::project_template::ProjectTemplate;
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::path::Path;
-
-use crate::consts;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, Hash)]
 pub struct UnityEditor {
@@ -10,6 +10,7 @@ pub struct UnityEditor {
     pub exe_path: String,
     pub base_path: String,
     pub platforms: Vec<String>,
+    pub templates: Vec<ProjectTemplate>,
 }
 
 impl PartialEq for UnityEditor {
@@ -35,9 +36,7 @@ impl UnityEditor {
             use exe::VSVersionInfo;
             let image = VecPE::from_disk_file(&exe_path).unwrap();
             let vs_version_check = VSVersionInfo::parse(&image);
-            if vs_version_check.is_err() {
-                return None;
-            }
+
             if let Some(string_file_info) = vs_version_check.unwrap().string_file_info {
                 let hashmap = string_file_info.children[0].string_map();
                 if let Some(result_version) = hashmap.get("ProductVersion") {
@@ -65,7 +64,8 @@ impl UnityEditor {
             version: version.unwrap().clone(),
             exe_path: exe_path.into_os_string().into_string().unwrap(),
             base_path: String::from(path),
-            platforms: UnityEditor::get_platforms(path),
+            platforms: UnityEditor::get_platforms(&path),
+            templates: ProjectTemplate::find_templates(&path),
         })
     }
 
