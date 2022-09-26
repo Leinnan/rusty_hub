@@ -1,6 +1,7 @@
+use crate::{consts, unity_editor::UnityEditor};
+use dpc_pariter::IteratorExt;
+use std::collections::HashSet;
 use walkdir::{DirEntry, WalkDir};
-
-use crate::unity_editor::UnityEditor;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Configuration {
@@ -10,18 +11,13 @@ pub struct Configuration {
 
 impl Configuration {
     pub fn rebuild(&mut self) {
-        self.editors_configurations = Vec::new();
         let paths = self.get_unity_paths();
-        for path in &paths {
-            let editor = UnityEditor::new(&path);
-            if editor.is_none() {
-                continue;
-            }
-            let editor = editor.unwrap();
-            if !self.editors_configurations.contains(&editor) {
-                self.editors_configurations.push(editor);
-            }
-        }
+        self.editors_configurations = paths
+            .into_iter()
+            .parallel_map(|path| UnityEditor::new(&path))
+            .parallel_filter(|editor| editor.is_some())
+            .parallel_map(|editor| editor.unwrap())
+            .collect();
     }
     pub fn get_unity_paths(&self) -> Vec<String> {
         let mut paths = Vec::new();
@@ -34,8 +30,11 @@ impl Configuration {
     }
 
     fn is_unity_dir(entry: &DirEntry) -> bool {
+        #[cfg(windows)]
         let uninstall_exists = entry.path().clone().join("Uninstall.exe").exists();
-        let unity_exe_exists = entry.path().clone().join("Unity.exe").exists();
+        #[cfg(unix)]
+        let uninstall_exists = true; // just check that on windows only
+        let unity_exe_exists = entry.path().clone().join(consts::UNITY_EXE_NAME).exists();
 
         uninstall_exists && unity_exe_exists
     }
@@ -45,29 +44,32 @@ impl Configuration {
         if !path_exists {
             return Vec::new();
         }
-        let mut result_paths: Vec<String> = Vec::new();
 
-        for entry in WalkDir::new(path)
-            .max_depth(5)
+        let hashset: HashSet<String> = WalkDir::new(path)
+            .max_depth(2)
             .into_iter()
-            .filter_entry(|_| true)
-        {
-            if entry.is_ok() {
-                let entry_unwraped = entry.unwrap();
-                let success = Configuration::is_unity_dir(&entry_unwraped);
-                if success {
-                    result_paths.push(entry_unwraped.path().to_string_lossy().into());
-                }
-            }
-        }
-        result_paths
+            .parallel_filter(|entry| entry.is_ok())
+            .parallel_map(|entry| entry.unwrap())
+            .parallel_filter(|entry| Configuration::is_unity_dir(&entry))
+            .parallel_map(|entry| entry.path().to_string_lossy().into())
+            .collect();
+
+        Vec::from_iter(hashset)
     }
 }
 
 impl Default for Configuration {
     fn default() -> Self {
         let mut default = Self {
-            unity_search_paths: vec!["C:\\Program Files\\Unity\\Hub".to_string()],
+            #[cfg(windows)]
+            unity_search_paths: vec!["C:\\Program Files\\Unity\\Hub\\Editor".to_string()],
+            #[cfg(target_os = "macos")]
+            unity_search_paths: vec![
+                "/Applications/Unity/Hub/Editor".to_string(),
+                "/Applications/Unity/".to_string(),
+            ],
+            #[cfg(target_os = "linux")]
+            unity_search_paths: vec!["~/Unity/Hub/Editor".to_string()],
             editors_configurations: Vec::new(),
         };
         default.rebuild();

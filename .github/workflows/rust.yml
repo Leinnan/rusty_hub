@@ -47,3 +47,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: cd egui_client && cargo build --verbose
+    - uses: actions/upload-artifact@v3
+      with:
+        name: upload executable
+        path: egui_client/target/release/rusty_hub_egui

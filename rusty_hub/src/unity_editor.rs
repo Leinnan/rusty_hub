@@ -4,7 +4,9 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::path::Path;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+use crate::consts;
+
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, Hash)]
 pub struct UnityEditor {
     pub version: String,
     pub exe_path: String,
@@ -21,12 +23,12 @@ impl PartialEq for UnityEditor {
 impl UnityEditor {
     pub fn new(path: &str) -> Option<Self> {
         let base_path = Path::new(path);
-        let exe_path = base_path.join("Unity.exe");
+        let exe_path = base_path.join(consts::UNITY_EXE_NAME);
         if !std::fs::metadata(&exe_path).is_ok() {
             return None;
         }
 
-        let image = VecPE::from_disk_file(base_path.join("Unity.exe")).unwrap();
+        let image = VecPE::from_disk_file(&exe_path).unwrap();
         let vs_version_check = VSVersionInfo::parse(&image);
         if vs_version_check.is_err() {
             return None;

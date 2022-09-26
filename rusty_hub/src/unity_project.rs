@@ -1,4 +1,4 @@
-use std::{path::Path, str};
+use std::{ops::Sub, path::Path, str};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UnityProject {
@@ -7,6 +7,7 @@ pub struct UnityProject {
     pub version: String,
     pub branch: String,
     pub is_valid: bool,
+    pub edit_time: std::time::SystemTime,
 }
 
 impl PartialEq for UnityProject {
@@ -31,7 +32,6 @@ impl UnityProject {
                 Security::Read,
             )
             .unwrap();
-        println!("{}", key.to_string());
 
         for value in key.values() {
             if value.is_err() {
@@ -48,7 +48,6 @@ impl UnityProject {
                 if let Some(result) = UnityProject::try_get_project_at_path(&project_path) {
                     projects.push(result);
                 }
-                println!("\t{}: {}", unwraped_name, project_path);
             }
         }
         projects
@@ -76,13 +75,19 @@ impl UnityProject {
         iter.next();
         let project_version = iter.next().unwrap().to_string();
 
-        Some(UnityProject {
+        let mut project = UnityProject {
             path: path.to_string(),
             title: path.split("\\").last().unwrap().to_string(),
             version: project_version,
             branch: String::new(),
             is_valid: true,
-        })
+            edit_time: std::time::SystemTime::now()
+                .sub(std::time::Duration::new(60 * 60 * 24 * 365 * 30, 0)),
+        };
+
+        project.update_info();
+
+        Some(project)
     }
 
     pub fn update_info(&mut self) {
@@ -107,6 +112,11 @@ impl UnityProject {
                 std::fs::read_to_string(&head_path).expect("Could not read HEAD file");
             if head_content.contains(HEAD_PREFIX) {
                 self.branch = head_content.replace(HEAD_PREFIX, "").trim().to_string();
+            }
+        }
+        if let Ok(meta) = std::fs::metadata(&self.path) {
+            if let Ok(data) = meta.modified() {
+                self.edit_time = data;
             }
         }
     }

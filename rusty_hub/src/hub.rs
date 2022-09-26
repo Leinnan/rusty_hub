@@ -1,8 +1,7 @@
-use std::{path::PathBuf, process::Command};
-
-use walkdir::WalkDir;
-
 use crate::{config::Configuration, unity_editor::UnityEditor, unity_project::UnityProject};
+use dpc_pariter::IteratorExt;
+use std::{path::PathBuf, process::Command};
+use walkdir::WalkDir;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Hub {
@@ -15,11 +14,16 @@ impl Hub {
         Self { config, projects }
     }
 
-    pub fn update_info(&mut self) {
+    pub fn update_data(&mut self) {
         self.config.rebuild();
-        for project in self.projects.iter_mut() {
+        self.update_projects_info();
+    }
+
+    pub fn update_projects_info(&mut self) {
+        self.projects.iter_mut().for_each(|project| {
             project.update_info();
-        }
+        });
+        self.projects.sort_by(|a, b| b.edit_time.cmp(&a.edit_time));
     }
 
     pub fn run_project_nr(&self, nr: usize) {
@@ -52,30 +56,28 @@ impl Hub {
 
     pub fn search_for_projects_at_path(&mut self, path: &PathBuf) -> usize {
         let path_exists = std::fs::metadata(path).is_ok();
-        let mut result = 0;
         if !path_exists {
-            return result;
+            return 0;
         }
-        for entry in WalkDir::new(path)
+        let projects = self.projects.clone();
+        let new_projects: Vec<UnityProject> = WalkDir::new(path)
             .max_depth(3)
             .into_iter()
-            .filter_entry(|_| true)
-        {
-            let projects = self.projects.clone();
-            if entry.is_err() {
-                continue;
-            }
+            .parallel_filter(|entry| entry.is_ok())
+            .parallel_map(|entry| {
+                UnityProject::try_get_project_at_path(
+                    &entry.unwrap().path().as_os_str().to_str().unwrap(),
+                )
+            })
+            .parallel_filter(|project| project.is_some())
+            .parallel_map(|project| project.unwrap())
+            .parallel_filter(move |p| !projects.contains(p))
+            .collect();
 
-            let entry_unwraped = entry.unwrap();
-            let path_string = entry_unwraped.path().as_os_str().to_str();
-            if let Some(project) = UnityProject::try_get_project_at_path(&path_string.unwrap()) {
-                if !projects.contains(&project) {
-                    self.projects.push(project);
-                    result = result + 1;
-                }
-            }
-        }
-        result
+        let len = new_projects.len();
+        self.projects.extend(new_projects);
+
+        len
     }
 }
 impl Default for Hub {

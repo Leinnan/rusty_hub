@@ -21,21 +21,23 @@ impl HubClient {
         let hub_option = confy::load("lwa_unity_hub", "config");
 
         let hub = if hub_option.is_ok() {
-            hub_option.unwrap()
+            let mut h: Hub = hub_option.unwrap();
+            h.update_projects_info();
+            h
         } else {
             Hub::default()
         };
-        let mut client = Self {
+        let client = Self {
             hub,
             current_tab: WindowTab::Projects,
         };
-        client.save_config(true);
+
         client
     }
 
     fn save_config(&mut self, rebuild: bool) {
         if rebuild {
-            self.hub.update_info();
+            self.hub.update_data();
         }
         let _ = confy::store("lwa_unity_hub", "config", &self.hub);
     }
