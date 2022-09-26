@@ -22,6 +22,18 @@ cargo run --release
 ```
 
 
+### 0.2 ToDo
+
+- [x] Working Mac version
+- [x] Detecting installed templates
+- [ ] Creating project from templates
+
+### 0.3 ToDo
+
+- [ ] Downloading templates
+- [ ] Downloading Unity editors
+- [ ] More?
+
 ## Thanks
 
 Big thanks to https://github.com/unitycoder/UnityLauncherPro 
