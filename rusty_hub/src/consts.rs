@@ -6,12 +6,12 @@ pub const UNITY_EXE_NAME: &str = "Unity.app/Contents/MacOS/Unity";
 pub const UNITY_EXE_NAME: &str = "Unity";
 
 #[cfg(windows)]
-pub const SLASH : &str = "\\";
+pub const SLASH: &str = "\\";
 #[cfg(unix)]
-pub const SLASH : &str = "/";
+pub const SLASH: &str = "/";
 #[cfg(windows)]
-pub const FILE_MANAGER : &str = "explorer";
+pub const FILE_MANAGER: &str = "explorer";
 #[cfg(target_os = "macos")]
-pub const FILE_MANAGER : &str = "open";
+pub const FILE_MANAGER: &str = "open";
 #[cfg(target_os = "linux")]
-pub const FILE_MANAGER : &str = "xdg-open";
+pub const FILE_MANAGER: &str = "xdg-open";

@@ -12,7 +12,7 @@ pub struct Configuration {
 impl Configuration {
     pub fn rebuild(&mut self) {
         let paths = self.get_unity_paths();
-        println!("{}",paths.len());
+        println!("{}", paths.len());
         self.editors_configurations = paths
             .into_iter()
             .parallel_map(|path| UnityEditor::new(&path))
@@ -36,7 +36,11 @@ impl Configuration {
         #[cfg(unix)]
         let uninstall_exists = true; // just check that on windows only
         let unity_exe_exists = entry.path().clone().join(consts::UNITY_EXE_NAME).exists();
-        println!("PATH {} {:?}", unity_exe_exists, &entry.path().clone().join(consts::UNITY_EXE_NAME));
+        println!(
+            "PATH {} {:?}",
+            unity_exe_exists,
+            &entry.path().clone().join(consts::UNITY_EXE_NAME)
+        );
 
         uninstall_exists && unity_exe_exists
     }

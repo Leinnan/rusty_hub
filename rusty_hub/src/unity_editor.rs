@@ -1,4 +1,3 @@
-
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::path::Path;
@@ -28,28 +27,34 @@ impl UnityEditor {
             return None;
         }
 
-        let mut version :Option<String> = None;
+        let mut version: Option<String> = None;
 
         #[cfg(windows)]
         {
             use exe::pe::VecPE;
             use exe::VSVersionInfo;
-        let image = VecPE::from_disk_file(&exe_path).unwrap();
+            let image = VecPE::from_disk_file(&exe_path).unwrap();
             let vs_version_check = VSVersionInfo::parse(&image);
-        if vs_version_check.is_err() {
-            return None;
-        }
-        if let Some(string_file_info) = vs_version_check.unwrap().string_file_info {
-            let hashmap = string_file_info.children[0].string_map();
-            if let Some(result_version) = hashmap.get("ProductVersion") {
-                version = Some(result_version.clone());
-                if let Some(short) = result_version.clone().split("_").take(1).next() {
-                    version = Some(short.to_string());
+            if vs_version_check.is_err() {
+                return None;
+            }
+            if let Some(string_file_info) = vs_version_check.unwrap().string_file_info {
+                let hashmap = string_file_info.children[0].string_map();
+                if let Some(result_version) = hashmap.get("ProductVersion") {
+                    version = Some(result_version.clone());
+                    if let Some(short) = result_version.clone().split("_").take(1).next() {
+                        version = Some(short.to_string());
+                    }
                 }
             }
-        }}
+        }
         if version.is_none() {
-            let folder = base_path.to_str().expect("Fail").split(consts::SLASH).last().unwrap();
+            let folder = base_path
+                .to_str()
+                .expect("Fail")
+                .split(consts::SLASH)
+                .last()
+                .unwrap();
             version = Some(folder.to_string());
         }
 
@@ -62,7 +67,6 @@ impl UnityEditor {
             base_path: String::from(path),
             platforms: UnityEditor::get_platforms(path),
         })
-        
     }
 
     fn get_platforms(unity_folder: &str) -> Vec<String> {
