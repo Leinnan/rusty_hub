@@ -1,0 +1,21 @@
+name: Windows Build
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+    - run: rustup toolchain install stable --profile minimal
+    - uses: Swatinem/rust-cache@v2
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cd egui_client && cargo build --release --verbose
+    - uses: actions/upload-artifact@v3
+      with:
+        name: build-exe
+        path: egui_client/target/release/*exe
