@@ -4,8 +4,8 @@ on:
   push:
     branches: [ main, master ]
     paths:
-      - 'egui_client/**'
-      - 'rusty_hub/**'
+      - 'rusty_hub_egui/**'
+      - 'unity_hub_lib/**'
   pull_request:
     branches: [ main, master ]
 
