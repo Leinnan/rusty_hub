@@ -1,0 +1,7 @@
+# [0.2.0]
+- Update egui to 0.21 version
+- Initial macOS support
+
+# [0.1.0]
+
+- Initial version
