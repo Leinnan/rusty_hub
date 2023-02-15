@@ -300,7 +300,7 @@ impl HubClient {
     }
 
     fn draw_editors_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
-        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.0;
+        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.4;
         let table = build_header_table(ui);
         table.body(|body| {
             body.rows(text_height, 1, |_, mut row| {
@@ -332,7 +332,7 @@ impl HubClient {
     }
 
     fn draw_project_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
-        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.0;
+        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.4;
         let table = build_header_table(ui);
         table.body(|body| {
             body.rows(text_height, 1, |_, mut row| {
@@ -451,7 +451,6 @@ impl eframe::App for HubClient {
             .show(ctx, |ui| {
                 self.draw_side_panel(ui);
             });
-        self.draw_central_panel(&ctx);
         egui::TopBottomPanel::bottom("bottomPanel").show(ctx, |ui| {
             ui.with_layout(Layout::right_to_left(eframe::emath::Align::Center), |ui| {
                 egui::widgets::global_dark_light_mode_switch(ui);
@@ -461,5 +460,6 @@ impl eframe::App for HubClient {
                 );
             });
         });
+        self.draw_central_panel(&ctx);
     }
 }
