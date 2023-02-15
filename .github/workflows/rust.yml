@@ -20,8 +20,10 @@ jobs:
     steps:
     - name: Hack sources.list
       run: sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu/|http://mirror.arizona.edu/ubuntu/|g' /etc/apt/sources.list
+    - name: Update res
+      run: sudo apt-get update
     - name: Install dependencies
-      run: sudo apt install -y mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libatk1.0-dev librust-gdk-sys-dev
+      run: sudo apt-get install -y mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libatk1.0-dev librust-gdk-sys-dev
     - run: rustup toolchain install stable --profile minimal
     - uses: Swatinem/rust-cache@v2
       with:
