@@ -7,7 +7,7 @@ use eframe::{
     egui::{self, Layout, Ui},
     epaint::Color32,
 };
-use egui_extras::{Size, TableBuilder};
+use egui_extras::{TableBuilder, Column};
 use rfd::FileDialog;
 use unity_hub_lib::{consts::FILE_MANAGER, hub::Hub};
 
@@ -62,10 +62,10 @@ impl HubClient {
         ui.scope(|ui| {
             let table = TableBuilder::new(ui)
                 .striped(false)
-                .scroll(false)
+                .vscroll(false)
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                .column(Size::initial(150.0).at_least(150.0))
-                .column(Size::remainder().at_least(260.0))
+                .column(Column::initial(150.0).at_least(150.0))
+                .column(Column::remainder().at_least(260.0))
                 .resizable(false);
 
             let paths = self.hub.config.unity_search_paths.clone();
@@ -100,11 +100,11 @@ impl HubClient {
 
         let table2 = TableBuilder::new(ui)
             .striped(true)
-            .scroll(false)
+            .vscroll(false)
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-            .column(Size::initial(100.0).at_least(100.0).at_most(120.0))
-            .column(Size::initial(150.0).at_least(150.0).at_most(400.0))
-            .column(Size::remainder().at_least(260.0))
+            .column(Column::initial(100.0).at_least(100.0).at_most(120.0))
+            .column(Column::initial(150.0).at_least(150.0).at_most(400.0))
+            .column(Column::remainder().at_least(260.0))
             .resizable(false);
 
         table2.body(|body| {
@@ -158,10 +158,10 @@ impl HubClient {
         let table = TableBuilder::new(ui)
             .striped(true)
             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-            .column(Size::initial(150.0).at_least(150.0))
-            .column(Size::initial(90.0).at_least(40.0))
-            .column(Size::initial(90.0).at_least(90.0))
-            .column(Size::remainder().at_least(260.0))
+            .column(Column::initial(150.0).at_least(150.0))
+            .column(Column::initial(90.0).at_least(40.0))
+            .column(Column::initial(90.0).at_least(90.0))
+            .column(Column::remainder().at_least(260.0))
             .resizable(false);
 
         table
@@ -410,11 +410,11 @@ impl HubClient {
 fn build_header_table(ui: &mut Ui) -> TableBuilder {
     let table = TableBuilder::new(ui)
         .striped(false)
-        .scroll(false)
+        .vscroll(false)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-        .column(Size::remainder().at_least(150.0))
-        .column(Size::initial(100.0).at_most(100.0))
-        .column(Size::initial(5.0).at_most(5.0))
+        .column(Column::remainder().at_least(150.0))
+        .column(Column::initial(100.0).at_most(100.0))
+        .column(Column::initial(5.0).at_most(5.0))
         .resizable(false);
     table
 }

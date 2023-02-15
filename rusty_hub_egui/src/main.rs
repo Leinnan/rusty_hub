@@ -30,7 +30,7 @@ fn main() {
         icon_data: Some(icon),
         ..NativeOptions::default()
     };
-    eframe::run_native(
+    let _ = eframe::run_native(
         &format!("{} v {}", APP_NAME, VERSION),
         options,
         Box::new(|cc| Box::new(crate::hub_client::HubClient::new(cc))),
