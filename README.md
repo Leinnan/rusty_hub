@@ -2,6 +2,7 @@
 
 https://www.mevlyshkin.com/projects/rusty_unity_hub/
 
+
 Very simple alternative for Unity Hub. Rust pet project. For now it does work properly only on Windows, but support for other platforms is on the roadmap.
 
 ![rusty_hub_egui_JU3JdNtfpz](https://user-images.githubusercontent.com/13188195/192162924-2f8eaef5-fc65-47f2-834c-f8abb704451d.gif)
