@@ -74,7 +74,7 @@ impl HubClient {
                     row.col(|ui| {
                         ui.vertical_centered_justified(|ui| {
                             ui.add_space(VERTICAL_SPACING - 2.0);
-                            if ui.button("Remove").clicked() {
+                            if ui.button("🚮 Remove").clicked() {
                                 self.hub.config.unity_search_paths.remove(row_index);
                                 self.save_config(true);
                                 return;
@@ -130,7 +130,21 @@ impl HubClient {
                             Layout::top_down_justified(eframe::emath::Align::Max),
                             |ui| {
                                 ui.add_space(VERTICAL_SPACING);
-                                ui.label(&editor.base_path);
+                                let version_response = ui.add(
+                                    egui::Label::new(&editor.base_path).sense(egui::Sense::click()),
+                                );
+                                version_response.context_menu(|ui| {
+                                    let text =
+                                        egui::RichText::new("🗁 Open directory");
+                                    if ui.button(text).clicked() {
+                                        use std::process::Command;
+                                        Command::new(FILE_MANAGER)
+                                            .arg(&editor.base_path)
+                                            .spawn()
+                                            .unwrap();
+                                        ui.close_menu();
+                                    }
+                                });
                             },
                         );
                     });
@@ -254,7 +268,7 @@ impl HubClient {
 
                                     let label = ui.label(egui::RichText::new(short).small());
                                     if is_long {
-                                        label.on_hover_text(&project.branch);
+                                        label.on_hover_text(format!(" {}", &project.branch));
                                     }
                                 },
                             );
@@ -268,7 +282,7 @@ impl HubClient {
                                         egui::Label::new(&project.path).sense(egui::Sense::click()),
                                     );
                                     path_response.context_menu(|ui| {
-                                        if ui.button("Open directory").clicked() {
+                                        if ui.button("🗁 Open directory").clicked() {
                                             use std::process::Command;
                                             Command::new(FILE_MANAGER)
                                                 .arg(&project.path)
@@ -297,7 +311,7 @@ impl HubClient {
                     ui.vertical_centered_justified(|ui| {
                         ui.add_space(VERTICAL_SPACING);
                         if ui
-                            .button("Add new path")
+                            .button("🖴 Add new path")
                             .on_hover_text("Add new editor search path")
                             .clicked()
                         {
@@ -329,7 +343,7 @@ impl HubClient {
                     ui.vertical_centered_justified(|ui| {
                         ui.add_space(VERTICAL_SPACING);
                         if ui
-                            .button("Scan")
+                            .button("🔭 Scan")
                             .on_hover_text("Scan selected folder for projects")
                             .clicked()
                         {

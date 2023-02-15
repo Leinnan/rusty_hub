@@ -62,6 +62,23 @@ impl UnityProject {
         std::fs::metadata(&one).is_ok() && std::fs::metadata(&two).is_ok()
     }
 
+    pub fn get_version_at_path(path: &str) -> Option<String> {
+        let project_version_file = std::fs::read_to_string(
+            Path::new(&path)
+                .join("ProjectSettings")
+                .join("ProjectVersion.txt"),
+        );
+        if project_version_file.is_err() {
+            return None;
+        }
+        let binding = project_version_file.unwrap();
+        let mut iter = binding.split_whitespace();
+        iter.next();
+        let project_version = iter.next().unwrap().to_string();
+
+        return Some(project_version);
+    }
+
     pub fn try_get_project_at_path(path: &str) -> Option<UnityProject> {
         #[cfg(windows)]
         let path = path.trim_matches(char::from(0)).replace("/", "\\");
@@ -70,21 +87,13 @@ impl UnityProject {
         if !UnityProject::is_project_at_path(&path) {
             return None;
         }
-        let project_version_file = std::fs::read_to_string(
-            Path::new(&path)
-                .join("ProjectSettings")
-                .join("ProjectVersion.txt"),
-        );
-        let project_version_file = project_version_file.unwrap();
-        let mut iter = project_version_file.split_whitespace();
-        iter.next();
-        let project_version = iter.next().unwrap().to_string();
+        
 
         let mut project = UnityProject {
             path: path.to_string(),
             title: path.split(consts::SLASH).last().unwrap().to_string(),
-            version: project_version,
             branch: String::new(),
+            version: String::new(),
             is_valid: true,
             edit_time: std::time::SystemTime::now()
                 .sub(std::time::Duration::new(60 * 60 * 24 * 365 * 30, 0)),
@@ -106,6 +115,7 @@ impl UnityProject {
         }
 
         let mut base_path = Path::new(&self.path);
+        self.version = Self::get_version_at_path(&self.path).unwrap(); 
 
         while let Some(path) = base_path.parent() {
             base_path = path;

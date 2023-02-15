@@ -21,7 +21,7 @@ eframe = "0.19.0"
 egui_extras = "0.19.0"
 unity_hub_lib = { path="../unity_hub_lib" }
 image = { version = "0.24.0", default-features = false, features = ["png"] }
-rfd = "0.10.0"
+rfd = "0.11.1"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"
