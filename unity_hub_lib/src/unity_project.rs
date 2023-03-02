@@ -2,7 +2,7 @@ use std::{ops::Sub, path::Path, str};
 
 use crate::consts;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Hash, Eq)]
 pub struct UnityProject {
     pub path: String,
     pub title: String,
@@ -11,6 +11,7 @@ pub struct UnityProject {
     pub is_valid: bool,
     pub edit_time: std::time::SystemTime,
 }
+
 
 impl PartialEq for UnityProject {
     fn eq(&self, other: &Self) -> bool {

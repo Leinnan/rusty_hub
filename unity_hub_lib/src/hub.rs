@@ -2,6 +2,7 @@ use crate::{config::Configuration, unity_editor::UnityEditor, unity_project::Uni
 use dpc_pariter::IteratorExt;
 use std::{path::PathBuf, process::Command};
 use walkdir::WalkDir;
+use std::collections::HashSet;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Hub {
@@ -20,6 +21,12 @@ impl Hub {
     }
 
     pub fn update_projects_info(&mut self) {
+        let mut registry = UnityProject::get_projects_from_registry()
+            .into_iter()
+            .filter(|p| !self.projects.contains(p))
+            .collect();
+        self.projects.append(&mut registry);
+        self.projects = self.projects.iter().cloned().collect::<HashSet<UnityProject>>().into_iter().collect();
         self.projects.iter_mut().for_each(|project| {
             project.update_info();
         });
