@@ -22,7 +22,7 @@ impl HubClient {
 
         let hub = if hub_option.is_ok() {
             let mut h: Hub = hub_option.unwrap();
-            h.update_projects_info();
+            h.update_data();
             h
         } else {
             Hub::default()
