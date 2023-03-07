@@ -1,15 +1,16 @@
 use crate::{
     consts::HOMEPAGE,
-    consts::{APP_NAME, VERSION, VERTICAL_SPACING},
+    consts::{APP_NAME, TOP_BUTTON_WIDTH, VERSION, VERTICAL_SPACING, TOP_SIDE_MARGIN},
     window_tab::WindowTab,
 };
 use eframe::{
-    egui::{self, Layout, Ui},
-    epaint::{Color32, FontId},
+    egui::{self, Layout, Ui, accesskit::TextAlign},
+    epaint::{Color32, FontId, FontFamily},
 };
 use egui_extras::{Column, TableBuilder};
 use rfd::FileDialog;
 use unity_hub_lib::{consts::FILE_MANAGER, hub::Hub};
+use inline_tweak::*;
 
 pub struct HubClient {
     hub: Hub,
@@ -338,97 +339,81 @@ impl HubClient {
     }
 
     fn draw_editors_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
-        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 3.0;
-        let table = build_header_table(ui);
-        table.body(|body| {
-            body.rows(text_height, 1, |_, mut row| {
-                row.col(|ui| {
-                    add_header(ui);
-                });
-                row.col(|ui| {
-                        if ui
-                            .button("🖴 Add new path")
-                            .on_hover_text("Add new editor search path")
-                            .clicked()
-                        {
-                            let directory = FileDialog::new().pick_folder();
-                            if let Some(dir) = directory {
-                                self.hub
-                                    .config
-                                    .unity_search_paths
-                                    .push(dir.into_os_string().into_string().unwrap());
-                                self.save_config(true);
-                            }
-                        }
-                });
-            });
-        });
+        add_header(ui);
+        if ui
+            .add_sized(
+                [TOP_BUTTON_WIDTH, 20.0],
+                egui::Button::new("🖴 Add new path"),
+            )
+            .on_hover_text("Add new editor search path")
+            .clicked()
+        {
+            let directory = FileDialog::new().pick_folder();
+            if let Some(dir) = directory {
+                self.hub
+                    .config
+                    .unity_search_paths
+                    .push(dir.into_os_string().into_string().unwrap());
+                self.save_config(true);
+            }
+        }
+        ui.allocate_space(egui::vec2(TOP_SIDE_MARGIN, 10.0));
     }
 
     fn draw_project_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
-        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 3.0;
-        let table = build_header_table(ui);
-        table.body(|body| {
-            body.rows(text_height, 1, |_, mut row| {
-                row.col(|ui| {
-                    add_header(ui);
-                });
-                row.col(|ui| {
-                        if ui
-                            .button("🔭 Scan for projects")
-                            .on_hover_text("Scan selected folder for projects")
-                            .clicked()
-                        {
-                            let directory = FileDialog::new().pick_folder();
+        add_header(ui);
+        if ui
+            .add_sized(
+                [TOP_BUTTON_WIDTH, 20.0],
+                egui::Button::new("🔭 Scan for projects"),
+            )
+            .on_hover_text("Scan selected folder for projects")
+            .clicked()
+        {
+            let directory = FileDialog::new().pick_folder();
 
-                            if let Some(dir) = directory {
-                                let amount = self.hub.search_for_projects_at_path(&dir);
-                                let mut message =
-                                    rfd::MessageDialog::new().set_title("Search ended");
+            if let Some(dir) = directory {
+                let amount = self.hub.search_for_projects_at_path(&dir);
+                let mut message = rfd::MessageDialog::new().set_title("Search ended");
 
-                                match amount {
-                                    0 => {
-                                        message = message
-                                            .set_description("No new projects found.")
-                                            .set_level(rfd::MessageLevel::Warning)
-                                    }
-                                    1 => message = message.set_description("Project founded!"),
-                                    _ => {
-                                        message = message.set_description(&format!(
-                                            "Founded {} projects.",
-                                            amount
-                                        ))
-                                    }
-                                }
-                                message.show();
-                                self.save_config(true);
-                            }
-                        }
-                });
-            });
-        });
+                match amount {
+                    0 => {
+                        message = message
+                            .set_description("No new projects found.")
+                            .set_level(rfd::MessageLevel::Warning)
+                    }
+                    1 => message = message.set_description("Project founded!"),
+                    _ => {
+                        message = message.set_description(&format!("Founded {} projects.", amount))
+                    }
+                }
+                message.show();
+                self.save_config(true);
+            }
+        }
+        ui.allocate_space(egui::vec2(TOP_SIDE_MARGIN, 10.0));
     }
+
+    fn tab_button(&self, ui: &mut Ui, tab: &WindowTab, text: &str) -> bool {
+        let button_size = tweak!(36.0);
+        let font_size = tweak!(16.0);
+        let button_size = egui::vec2(ui.available_width(), button_size);
+
+        let rich_text = if &self.current_tab == tab { egui::RichText::new(text).strong() } else { egui::RichText::new(text).weak() }.font(FontId::new(font_size, FontFamily::Proportional));
+
+        ui.add_sized(button_size, egui::Label::new(rich_text).wrap(false).sense(egui::Sense::click()))
+                    .clicked()
+    }
+
     fn draw_side_panel(&mut self, ui: &mut Ui) {
         ui.with_layout(
-            Layout::top_down_justified(eframe::emath::Align::Min),
+            Layout::top_down(eframe::emath::Align::Min),
             |ui| {
-                ui.add_space(VERTICAL_SPACING);
-                let button = egui::Button::new(egui::RichText::new("📦 Projects").heading())
-                    .frame(&self.current_tab == &WindowTab::Projects);
-                if ui
-                    .add_enabled(&self.current_tab != &WindowTab::Projects, button)
-                    .clicked()
+                if self.tab_button(ui, &WindowTab::Projects, tweak!("📦 Projects"))
                 {
                     self.current_tab = WindowTab::Projects;
                 }
-                ui.add_space(VERTICAL_SPACING);
-                if ui
-                    .add_enabled(
-                        &self.current_tab != &WindowTab::Editors,
-                        egui::Button::new(egui::RichText::new("🛠 Editors").heading())
-                            .frame(&self.current_tab == &WindowTab::Editors),
-                    )
-                    .clicked()
+                if self.tab_button(ui, &WindowTab::Editors, tweak!("🛠 Editors"))
                 {
                     self.current_tab = WindowTab::Editors;
                 }
@@ -437,26 +422,14 @@ impl HubClient {
     }
 }
 
-fn build_header_table(ui: &mut Ui) -> TableBuilder {
-    let table = TableBuilder::new(ui)
-        .striped(false)
-        .vscroll(false)
-        .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-        .column(Column::remainder())
-        .column(Column::initial(150.0).at_most(200.0))
-        .resizable(false);
-    table
-}
-
 fn add_header(ui: &mut Ui) {
-    ui.with_layout(
-        Layout::top_down_justified(eframe::emath::Align::Min),
-        |ui| {
-            use eframe::epaint::FontFamily;
-            let text = egui::RichText::new(APP_NAME).font(FontId::new(26.0, FontFamily::Name("semibold".into())));
-            ui.add(egui::Label::new(text));
-        },
-    );
+    let header_height = tweak!(45.0);
+    let text =
+        egui::RichText::new(APP_NAME).font(FontId::new(26.0, FontFamily::Name("semibold".into()))).strong();
+    ui.allocate_space(egui::vec2(TOP_SIDE_MARGIN, header_height));
+    ui.add(egui::Label::new(text));
+    let available_width = ui.available_width() - TOP_BUTTON_WIDTH - TOP_SIDE_MARGIN - TOP_SIDE_MARGIN;
+    ui.allocate_space(egui::vec2(available_width, header_height));
 }
 
 impl eframe::App for HubClient {
@@ -465,15 +438,14 @@ impl eframe::App for HubClient {
             .frame(egui::Frame::canvas(&ctx.style()))
             .show(ctx, |ui| {
                 ui.with_layout(
-                    egui::Layout::left_to_right(egui::Align::Center).with_cross_justify(true),
+                    egui::Layout::left_to_right(egui::Align::Center).with_cross_align(eframe::emath::Align::Center),
                     |ui| {
-                    ui.add_space(14.0);
-                    match self.current_tab {
-                        WindowTab::Projects => self.draw_project_header(&ctx, ui),
-                        WindowTab::Editors => self.draw_editors_header(&ctx, ui),
-                    };
-                    ui.add_space(14.0);
-                });
+                        match self.current_tab {
+                            WindowTab::Projects => self.draw_project_header(&ctx, ui),
+                            WindowTab::Editors => self.draw_editors_header(&ctx, ui),
+                        };
+                    },
+                );
             });
 
         egui::SidePanel::left("dsadsa")

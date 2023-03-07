@@ -22,7 +22,7 @@ egui_extras = "0.21.0"
 unity_hub_lib = { path="../unity_hub_lib" }
 image = { version = "0.24.0", default-features = false, features = ["png"] }
 rfd = "0.11.1"
-catppuccin-egui = "2.0"
+inline_tweak = "1.0.8"
 poll-promise = "0.2.0"
 
 [target.'cfg(windows)'.build-dependencies]

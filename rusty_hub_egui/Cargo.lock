@@ -442,15 +442,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "catppuccin-egui"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e508ad60790f1336e5ab24da9b809826e7ea9171281cc70e894f514f37791317"
-dependencies = [
- "egui",
-]
-
-[[package]]
 name = "cc"
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1321,6 +1312,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "inline_tweak"
+version = "1.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7033e97b20277cc0d043226d1940fa7719ff08d2305d1fc7421e53066d00eb4b"
+dependencies = [
+ "lazy_static",
+]
+
+[[package]]
 name = "instant"
 version = "0.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2024,11 +2024,11 @@ dependencies = [
 name = "rusty_hub_egui"
 version = "0.2.0"
 dependencies = [
- "catppuccin-egui",
  "confy",
  "eframe",
  "egui_extras",
  "image",
+ "inline_tweak",
  "poll-promise",
  "rfd",
  "unity_hub_lib",
