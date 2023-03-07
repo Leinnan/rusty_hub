@@ -27,11 +27,11 @@ fn setup_custom_fonts(ctx: &egui::Context) {
     // .ttf and .otf files supported.
     fonts.font_data.insert(
         "regular".to_owned(),
-        egui::FontData::from_static(include_bytes!("..\\static\\Inter-Regular.ttf")),
+        egui::FontData::from_static(include_bytes!("../static/Inter-Regular.ttf")),
     );
     fonts.font_data.insert(
         "semibold".to_owned(),
-        egui::FontData::from_static(include_bytes!("..\\static\\Inter-SemiBold.ttf")),
+        egui::FontData::from_static(include_bytes!("../static/Inter-SemiBold.ttf")),
     );
 
     // Put my font first (highest priority) for proportional text:
