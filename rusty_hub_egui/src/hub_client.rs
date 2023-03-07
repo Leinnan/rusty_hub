@@ -4,7 +4,7 @@ use crate::{
     window_tab::WindowTab,
 };
 use eframe::{
-    egui::{self, Layout, Ui, accesskit::TextAlign},
+    egui::{self, Layout, Ui},
     epaint::{Color32, FontId, FontFamily},
 };
 use egui_extras::{Column, TableBuilder};
@@ -99,40 +99,21 @@ impl HubClient {
         ui.add_space(VERTICAL_SPACING);
         let text_height = egui::TextStyle::Body.resolve(&ui.style()).size * 2.0;
 
-        ui.scope(|ui| {
-            let table = TableBuilder::new(ui)
-                .striped(false)
-                .vscroll(false)
-                .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                .column(Column::initial(150.0).at_least(150.0))
-                .column(Column::remainder().at_least(260.0))
-                .resizable(false);
-
-            let paths = self.hub.config.unity_search_paths.clone();
-            table.body(|body| {
-                body.rows(text_height, paths.len(), |row_index, mut row| {
-                    row.col(|ui| {
-                        ui.vertical_centered_justified(|ui| {
-                            ui.add_space(VERTICAL_SPACING - 2.0);
-                            if ui.button("🚮 Remove").clicked() {
-                                self.hub.config.unity_search_paths.remove(row_index);
-                                self.save_config(true);
-                                return;
-                            }
-                        });
-                    });
-                    row.col(|ui| {
-                        ui.with_layout(
-                            Layout::top_down_justified(eframe::emath::Align::Max),
-                            |ui| {
-                                ui.add_space(VERTICAL_SPACING);
-                                ui.label(&paths[row_index]);
-                            },
-                        );
-                    });
+        let paths = self.hub.config.unity_search_paths.clone();
+        for (i, path) in paths.iter().enumerate() {
+            ui.horizontal(
+                |ui| {
+                    ui.label(path);
+                    let height = tweak!(30.0);
+                    let button_width = tweak!(100.0);
+                    ui.allocate_space(egui::vec2(ui.available_width()-button_width-TOP_SIDE_MARGIN,height));
+                    if ui.add_sized([button_width, height], egui::Button::new("🚮 Remove")).clicked() {
+                        self.hub.config.unity_search_paths.remove(i);
+                        self.save_config(true);
+                        return;
+                    }
                 });
-            });
-        });
+        }
         ui.add_space(VERTICAL_SPACING * 2.0);
 
         ui.label(egui::RichText::new("Installed editor versions").heading());
@@ -342,7 +323,7 @@ impl HubClient {
         add_header(ui);
         if ui
             .add_sized(
-                [TOP_BUTTON_WIDTH, 20.0],
+                [TOP_BUTTON_WIDTH, 30.0],
                 egui::Button::new("🖴 Add new path"),
             )
             .on_hover_text("Add new editor search path")
@@ -364,7 +345,7 @@ impl HubClient {
         add_header(ui);
         if ui
             .add_sized(
-                [TOP_BUTTON_WIDTH, 20.0],
+                [TOP_BUTTON_WIDTH, 30.0],
                 egui::Button::new("🔭 Scan for projects"),
             )
             .on_hover_text("Scan selected folder for projects")
