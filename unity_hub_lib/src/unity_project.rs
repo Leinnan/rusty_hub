@@ -106,7 +106,6 @@ impl UnityProject {
     }
 
     pub fn update_info(&mut self) {
-        const HEAD_PREFIX: &str = "ref: refs/heads/";
 
         let is_project = UnityProject::is_project_at_path(&self.path);
         self.is_valid = is_project;
@@ -116,24 +115,41 @@ impl UnityProject {
         }
 
         let mut base_path = Path::new(&self.path);
-        self.version = Self::get_version_at_path(&self.path).unwrap(); 
+        self.version = Self::get_version_at_path(&self.path).unwrap();
+        
 
-        while let Some(path) = base_path.parent() {
-            base_path = path;
-            let head_path = Path::new(&path).join(".git").join("HEAD");
-            if !head_path.exists() {
-                continue;
+        match self.try_read_from_path(base_path) {
+            None => {
+                while let Some(path) = base_path.parent() {
+                    base_path = path;
+                    let new_branch = self.try_read_from_path(base_path);
+                    if new_branch.is_some() {
+                        self.branch = new_branch.unwrap();
+                        break;
+                    }
+                }
             }
-            let head_content =
-                std::fs::read_to_string(&head_path).expect("Could not read HEAD file");
-            if head_content.contains(HEAD_PREFIX) {
-                self.branch = head_content.replace(HEAD_PREFIX, "").trim().to_string();
-            }
+            Some(value) => {
+                self.branch = value;
+            },
         }
+
         if let Ok(meta) = std::fs::metadata(&self.path) {
             if let Ok(data) = meta.modified() {
                 self.edit_time = data;
             }
         }
+    }
+
+    fn try_read_from_path(&self, path: &std::path::Path) -> Option<String> {
+        const HEAD_PREFIX: &str = "ref: refs/heads/";
+        
+        let head_path = Path::new(&path).join(".git").join("HEAD");
+        if !head_path.exists() { return None;}
+        let head_content =
+            std::fs::read_to_string(&head_path).expect("Could not read HEAD file");
+        if head_content.contains(HEAD_PREFIX) {
+            Some(head_content.replace(HEAD_PREFIX, "").trim().to_string())
+        } else {None}
     }
 }
