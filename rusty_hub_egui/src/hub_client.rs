@@ -5,9 +5,9 @@ use crate::{
 };
 use eframe::{
     egui::{self, Layout, Ui},
-    epaint::Color32,
+    epaint::{Color32, FontId},
 };
-use egui_extras::{TableBuilder, Column};
+use egui_extras::{Column, TableBuilder};
 use rfd::FileDialog;
 use unity_hub_lib::{consts::FILE_MANAGER, hub::Hub};
 
@@ -16,8 +16,47 @@ pub struct HubClient {
     current_tab: WindowTab,
 }
 
+fn setup_custom_fonts(ctx: &egui::Context) {
+    // Start with the default fonts (we will be adding to them rather than replacing them).
+    let mut fonts = egui::FontDefinitions::default();
+
+    // Install my own font (maybe supporting non-latin characters).
+    // .ttf and .otf files supported.
+    fonts.font_data.insert(
+        "regular".to_owned(),
+        egui::FontData::from_static(include_bytes!("..\\static\\Inter-Regular.ttf")),
+    );
+    fonts.font_data.insert(
+        "semibold".to_owned(),
+        egui::FontData::from_static(include_bytes!("..\\static\\Inter-SemiBold.ttf")),
+    );
+
+    // Put my font first (highest priority) for proportional text:
+    fonts
+        .families
+        .entry(egui::FontFamily::Proportional)
+        .or_default()
+        .insert(0, "regular".to_owned());
+    fonts
+        .families
+        .entry(egui::FontFamily::Name("semibold".into()))
+        .or_default()
+        .insert(0, "semibold".to_owned());
+
+    // Put my font as last fallback for monospace:
+    fonts
+        .families
+        .entry(egui::FontFamily::Monospace)
+        .or_default()
+        .push("regular".to_owned());
+
+    // Tell egui to use these fonts:
+    ctx.set_fonts(fonts);
+}
+
 impl HubClient {
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        setup_custom_fonts(&cc.egui_ctx);
         let hub_option = confy::load("rusty_hub_egui", "config");
 
         let hub = if hub_option.is_ok() {
@@ -134,8 +173,7 @@ impl HubClient {
                                     egui::Label::new(&editor.base_path).sense(egui::Sense::click()),
                                 );
                                 version_response.context_menu(|ui| {
-                                    let text =
-                                        egui::RichText::new("🗁 Open directory");
+                                    let text = egui::RichText::new("🗁 Open directory");
                                     if ui.button(text).clicked() {
                                         use std::process::Command;
                                         Command::new(FILE_MANAGER)
@@ -300,7 +338,7 @@ impl HubClient {
     }
 
     fn draw_editors_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
-        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.4;
+        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 3.0;
         let table = build_header_table(ui);
         table.body(|body| {
             body.rows(text_height, 1, |_, mut row| {
@@ -308,8 +346,6 @@ impl HubClient {
                     add_header(ui);
                 });
                 row.col(|ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.add_space(VERTICAL_SPACING);
                         if ui
                             .button("🖴 Add new path")
                             .on_hover_text("Add new editor search path")
@@ -324,15 +360,13 @@ impl HubClient {
                                 self.save_config(true);
                             }
                         }
-                    });
                 });
-                row.col(|_ui| {});
             });
         });
     }
 
     fn draw_project_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
-        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.4;
+        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 3.0;
         let table = build_header_table(ui);
         table.body(|body| {
             body.rows(text_height, 1, |_, mut row| {
@@ -340,10 +374,8 @@ impl HubClient {
                     add_header(ui);
                 });
                 row.col(|ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.add_space(VERTICAL_SPACING);
                         if ui
-                            .button("🔭 Scan")
+                            .button("🔭 Scan for projects")
                             .on_hover_text("Scan selected folder for projects")
                             .clicked()
                         {
@@ -372,9 +404,7 @@ impl HubClient {
                                 self.save_config(true);
                             }
                         }
-                    });
                 });
-                row.col(|_ui| {});
             });
         });
     }
@@ -412,9 +442,8 @@ fn build_header_table(ui: &mut Ui) -> TableBuilder {
         .striped(false)
         .vscroll(false)
         .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-        .column(Column::remainder().at_least(150.0))
-        .column(Column::initial(100.0).at_most(100.0))
-        .column(Column::initial(5.0).at_most(5.0))
+        .column(Column::remainder())
+        .column(Column::initial(150.0).at_most(200.0))
         .resizable(false);
     table
 }
@@ -423,8 +452,8 @@ fn add_header(ui: &mut Ui) {
     ui.with_layout(
         Layout::top_down_justified(eframe::emath::Align::Min),
         |ui| {
-            ui.add_space(5.0);
-            let text = egui::RichText::new(APP_NAME).heading().strong();
+            use eframe::epaint::FontFamily;
+            let text = egui::RichText::new(APP_NAME).font(FontId::new(26.0, FontFamily::Name("semibold".into())));
             ui.add(egui::Label::new(text));
         },
     );
@@ -435,7 +464,9 @@ impl eframe::App for HubClient {
         egui::TopBottomPanel::top("topPanel")
             .frame(egui::Frame::canvas(&ctx.style()))
             .show(ctx, |ui| {
-                ui.horizontal(|ui| {
+                ui.with_layout(
+                    egui::Layout::left_to_right(egui::Align::Center).with_cross_justify(true),
+                    |ui| {
                     ui.add_space(14.0);
                     match self.current_tab {
                         WindowTab::Projects => self.draw_project_header(&ctx, ui),

@@ -442,6 +442,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "catppuccin-egui"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e508ad60790f1336e5ab24da9b809826e7ea9171281cc70e894f514f37791317"
+dependencies = [
+ "egui",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1824,6 +1833,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "poll-promise"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fcf2a02372dfae23c9c01267fb296b8a3413bb4e45fbd589c3ac73c6dcfbb305"
+dependencies = [
+ "static_assertions",
+]
+
+[[package]]
 name = "polling"
 version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2006,10 +2024,12 @@ dependencies = [
 name = "rusty_hub_egui"
 version = "0.2.0"
 dependencies = [
+ "catppuccin-egui",
  "confy",
  "eframe",
  "egui_extras",
  "image",
+ "poll-promise",
  "rfd",
  "unity_hub_lib",
  "winres",
