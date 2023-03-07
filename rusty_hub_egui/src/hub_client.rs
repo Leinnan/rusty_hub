@@ -1,16 +1,18 @@
 use crate::{
     consts::HOMEPAGE,
-    consts::{APP_NAME, TOP_BUTTON_WIDTH, VERSION, VERTICAL_SPACING, TOP_SIDE_MARGIN},
+    consts::{
+        APP_NAME, HEADER_HEIGHT, TOP_BUTTON_WIDTH, TOP_SIDE_MARGIN, VERSION, VERTICAL_SPACING,
+    },
     window_tab::WindowTab,
 };
 use eframe::{
     egui::{self, Layout, Ui},
-    epaint::{Color32, FontId, FontFamily},
+    epaint::{text, Color32, FontFamily, FontId},
 };
 use egui_extras::{Column, TableBuilder};
+use inline_tweak::*;
 use rfd::FileDialog;
 use unity_hub_lib::{consts::FILE_MANAGER, hub::Hub};
-use inline_tweak::*;
 
 pub struct HubClient {
     hub: Hub,
@@ -101,18 +103,23 @@ impl HubClient {
 
         let paths = self.hub.config.unity_search_paths.clone();
         for (i, path) in paths.iter().enumerate() {
-            ui.horizontal(
-                |ui| {
-                    ui.label(path);
-                    let height = tweak!(30.0);
-                    let button_width = tweak!(100.0);
-                    ui.allocate_space(egui::vec2(ui.available_width()-button_width-TOP_SIDE_MARGIN,height));
-                    if ui.add_sized([button_width, height], egui::Button::new("🚮 Remove")).clicked() {
-                        self.hub.config.unity_search_paths.remove(i);
-                        self.save_config(true);
-                        return;
-                    }
-                });
+            ui.horizontal(|ui| {
+                ui.label(path);
+                let height = tweak!(30.0);
+                let button_width = tweak!(100.0);
+                ui.allocate_space(egui::vec2(
+                    ui.available_width() - button_width - TOP_SIDE_MARGIN,
+                    height,
+                ));
+                if ui
+                    .add_sized([button_width, height], egui::Button::new("🚮 Remove"))
+                    .clicked()
+                {
+                    self.hub.config.unity_search_paths.remove(i);
+                    self.save_config(true);
+                    return;
+                }
+            });
         }
         ui.add_space(VERTICAL_SPACING * 2.0);
 
@@ -173,154 +180,96 @@ impl HubClient {
         });
     }
     fn draw_project(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
-        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.0;
+        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * tweak!(3.0);
 
-        let table = TableBuilder::new(ui)
-            .striped(true)
-            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-            .column(Column::initial(150.0).at_least(150.0))
-            .column(Column::initial(90.0).at_least(40.0))
-            .column(Column::initial(90.0).at_least(90.0))
-            .column(Column::remainder().at_least(260.0))
-            .resizable(false);
-
-        table
-            .header(25.0, |mut header| {
-                header.col(|ui| {
-                    ui.heading("Name");
-                    ui.add_space(VERTICAL_SPACING);
-                });
-                header.col(|ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.heading("Version");
-                        ui.add_space(VERTICAL_SPACING);
-                    });
-                });
-                header.col(|ui| {
-                    ui.vertical_centered_justified(|ui| {
-                        ui.heading("Branch");
-                        ui.add_space(VERTICAL_SPACING);
-                    });
-                });
-                header.col(|ui| {
-                    ui.with_layout(
-                        Layout::top_down_justified(eframe::emath::Align::Max),
-                        |ui| {
-                            ui.heading("Directory");
-                            ui.add_space(VERTICAL_SPACING);
-                        },
-                    );
-                });
-            })
-            .body(|body| {
-                body.rows(
-                    text_height,
-                    self.hub.projects.len(),
-                    |row_index, mut row| {
-                        let project = &self.hub.projects[row_index];
-                        let editor_for_project_exists =
-                            self.hub.editor_for_project(project).is_some();
-                        row.col(|ui| {
-                            ui.vertical_centered_justified(|ui| {
-                                ui.add_space(VERTICAL_SPACING - 2.0);
-                                if ui
-                                    .add_enabled(
-                                        editor_for_project_exists,
-                                        egui::Button::new(format!("{}", &project.title)),
-                                    )
-                                    .on_disabled_hover_text(format!(
-                                        "Select different Unity version"
-                                    ))
-                                    .clicked()
-                                {
-                                    self.hub.run_project_nr(row_index);
+        let projects = self.hub.projects.clone();
+        for (i, project) in projects.iter().enumerate() {
+            let editor_for_project_exists = self.hub.editor_for_project(project).is_some();
+            ui.horizontal(|ui| {
+                let color = if i % 2 == 0 {
+                    Color32::from_rgba_premultiplied(0, 0, 0, 30)
+                } else {
+                    egui::Color32::TRANSPARENT
+                };
+                egui::Frame::none().fill(color).show(ui, |ui| {
+                    ui.add_sized(
+                        [text_height, text_height],
+                        egui::Button::new("⚙").frame(false),
+                    )
+                    .context_menu(|ui| {
+                        ui.menu_button("Open in", |ui| {
+                            for editor in &self.hub.config.editors_configurations {
+                                let mut text = egui::RichText::new(format!("{}", &editor.version));
+                                if editor.version.contains(&project.version) {
+                                    text = text.strong().color(Color32::GREEN);
                                 }
-                                ui.add_space(VERTICAL_SPACING);
-                            });
+                                if ui.button(text).clicked() {
+                                    Hub::run_project(&editor, &project);
+                                    ui.close_menu();
+                                }
+                            }
                         });
-                        row.col(|ui| {
-                            ui.with_layout(
-                                Layout::top_down_justified(eframe::emath::Align::Center),
-                                |ui| {
-                                    ui.add_space(VERTICAL_SPACING);
-                                    let mut text = egui::RichText::new(&project.version);
-                                    if !editor_for_project_exists {
-                                        text = text.color(Color32::RED);
-                                    }
-                                    let version_response =
-                                        ui.add(egui::Label::new(text).sense(egui::Sense::click()));
-                                    version_response.context_menu(|ui| {
-                                        for editor in &self.hub.config.editors_configurations {
-                                            let mut text = egui::RichText::new(format!(
-                                                "Open in {}",
-                                                &editor.version
-                                            ));
-                                            if editor.version.contains(&project.version) {
-                                                text = text.strong().color(Color32::GREEN);
-                                            }
-                                            if ui.button(text).clicked() {
-                                                Hub::run_project(&editor, &project);
-                                                ui.close_menu();
-                                            }
-                                        }
-                                    });
-                                },
-                            );
-                        });
-                        row.col(|ui| {
-                            ui.with_layout(
-                                Layout::top_down_justified(eframe::emath::Align::Max),
-                                |ui| {
-                                    if project.branch.len() < 1 {
-                                        return;
-                                    }
-                                    ui.add_space(VERTICAL_SPACING);
-                                    const MAX_BRANCH_LEN: usize = 15;
-                                    let is_long = project.branch.len() > MAX_BRANCH_LEN;
-                                    let short = if !is_long {
-                                        project.branch.clone()
-                                    } else {
-                                        let mut result =
-                                            String::from(&project.branch[0..MAX_BRANCH_LEN]);
-                                        result.push_str("...");
-                                        result
-                                    };
 
-                                    let label = ui.label(egui::RichText::new(short).small());
-                                    if is_long {
-                                        label.on_hover_text(format!(" {}", &project.branch));
-                                    }
-                                },
-                            );
-                        });
-                        row.col(|ui| {
-                            ui.with_layout(
-                                Layout::top_down_justified(eframe::emath::Align::Max),
-                                |ui| {
-                                    ui.add_space(VERTICAL_SPACING);
-                                    let path_response = ui.add(
-                                        egui::Label::new(&project.path).sense(egui::Sense::click()),
-                                    );
-                                    path_response.context_menu(|ui| {
-                                        if ui.button("🗁 Open directory").clicked() {
-                                            use std::process::Command;
-                                            Command::new(FILE_MANAGER)
-                                                .arg(&project.path)
-                                                .spawn()
-                                                .unwrap();
-                                            ui.close_menu();
-                                        }
-                                    });
-                                },
-                            );
-                        });
-                    },
-                );
+                        if ui
+                            .button("Open directory")
+                            .on_hover_text(&project.path)
+                            .clicked()
+                        {
+                            use std::process::Command;
+                            Command::new(FILE_MANAGER)
+                                .arg(&project.path)
+                                .spawn()
+                                .unwrap();
+                            ui.close_menu();
+                        }
+                    });
+                    ui.label(egui::RichText::new(format!("{}", &project.title)).heading());
+
+                    if project.branch.len() > 0 {
+                        ui.add_space(TOP_SIDE_MARGIN);
+                        const MAX_BRANCH_LEN: usize = 15;
+                        let is_long = project.branch.len() > MAX_BRANCH_LEN;
+                        let short = if !is_long {
+                            project.branch.clone()
+                        } else {
+                            let mut result = String::from(&project.branch[0..MAX_BRANCH_LEN]);
+                            result.push_str("...");
+                            result
+                        };
+
+                        let label = ui.label(egui::RichText::new(short).small().weak());
+                        if is_long {
+                            label.on_hover_text(format!(" {}", &project.branch));
+                        }
+                    }
+                    let btn_width = tweak!(100.0);
+                    ui.allocate_space(egui::vec2(
+                        ui.available_width() - btn_width - TOP_SIDE_MARGIN,
+                        text_height,
+                    ));
+                    let text = if editor_for_project_exists {
+                        egui::RichText::new(format!("{}", "Open"))
+                    } else {
+                        egui::RichText::new(format!("{}", "Open")).weak()
+                    };
+                    let button = egui::Button::new(text);
+                    let added_button = ui.add_sized([btn_width, text_height], button);
+                    if added_button.clicked() {
+                        if editor_for_project_exists {
+                            self.hub.run_project_nr(i);
+                        }
+                    }
+                });
             });
+        }
     }
 
     fn draw_editors_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
         add_header(ui);
+
+        let available_width =
+            ui.available_width() - TOP_BUTTON_WIDTH - TOP_SIDE_MARGIN - TOP_SIDE_MARGIN;
+        ui.allocate_space(egui::vec2(available_width, HEADER_HEIGHT));
         if ui
             .add_sized(
                 [TOP_BUTTON_WIDTH, 30.0],
@@ -343,6 +292,12 @@ impl HubClient {
 
     fn draw_project_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
         add_header(ui);
+
+        let available_width = ui.available_width()
+            - TOP_BUTTON_WIDTH
+            - TOP_SIDE_MARGIN
+            - TOP_SIDE_MARGIN;
+        ui.allocate_space(egui::vec2(available_width, HEADER_HEIGHT));
         if ui
             .add_sized(
                 [TOP_BUTTON_WIDTH, 30.0],
@@ -380,37 +335,40 @@ impl HubClient {
         let font_size = tweak!(16.0);
         let button_size = egui::vec2(ui.available_width(), button_size);
 
-        let rich_text = if &self.current_tab == tab { egui::RichText::new(text).strong() } else { egui::RichText::new(text).weak() }.font(FontId::new(font_size, FontFamily::Proportional));
+        let rich_text = if &self.current_tab == tab {
+            egui::RichText::new(text).strong()
+        } else {
+            egui::RichText::new(text).weak()
+        }
+        .font(FontId::new(font_size, FontFamily::Proportional));
 
-        ui.add_sized(button_size, egui::Label::new(rich_text).wrap(false).sense(egui::Sense::click()))
-                    .clicked()
+        ui.add_sized(
+            button_size,
+            egui::Label::new(rich_text)
+                .wrap(false)
+                .sense(egui::Sense::click()),
+        )
+        .clicked()
     }
 
     fn draw_side_panel(&mut self, ui: &mut Ui) {
-        ui.with_layout(
-            Layout::top_down(eframe::emath::Align::Min),
-            |ui| {
-                if self.tab_button(ui, &WindowTab::Projects, tweak!("📦 Projects"))
-                {
-                    self.current_tab = WindowTab::Projects;
-                }
-                if self.tab_button(ui, &WindowTab::Editors, tweak!("🛠 Editors"))
-                {
-                    self.current_tab = WindowTab::Editors;
-                }
-            },
-        );
+        ui.with_layout(Layout::top_down(eframe::emath::Align::Min), |ui| {
+            if self.tab_button(ui, &WindowTab::Projects, tweak!("📦 Projects")) {
+                self.current_tab = WindowTab::Projects;
+            }
+            if self.tab_button(ui, &WindowTab::Editors, tweak!("🛠 Editors")) {
+                self.current_tab = WindowTab::Editors;
+            }
+        });
     }
 }
 
 fn add_header(ui: &mut Ui) {
-    let header_height = tweak!(45.0);
-    let text =
-        egui::RichText::new(APP_NAME).font(FontId::new(26.0, FontFamily::Name("semibold".into()))).strong();
-    ui.allocate_space(egui::vec2(TOP_SIDE_MARGIN, header_height));
+    let text = egui::RichText::new(APP_NAME)
+        .font(FontId::new(26.0, FontFamily::Name("semibold".into())))
+        .strong();
+    ui.allocate_space(egui::vec2(TOP_SIDE_MARGIN, HEADER_HEIGHT));
     ui.add(egui::Label::new(text));
-    let available_width = ui.available_width() - TOP_BUTTON_WIDTH - TOP_SIDE_MARGIN - TOP_SIDE_MARGIN;
-    ui.allocate_space(egui::vec2(available_width, header_height));
 }
 
 impl eframe::App for HubClient {
@@ -419,7 +377,8 @@ impl eframe::App for HubClient {
             .frame(egui::Frame::canvas(&ctx.style()))
             .show(ctx, |ui| {
                 ui.with_layout(
-                    egui::Layout::left_to_right(egui::Align::Center).with_cross_align(eframe::emath::Align::Center),
+                    egui::Layout::left_to_right(egui::Align::Center)
+                        .with_cross_align(eframe::emath::Align::Center),
                     |ui| {
                         match self.current_tab {
                             WindowTab::Projects => self.draw_project_header(&ctx, ui),
