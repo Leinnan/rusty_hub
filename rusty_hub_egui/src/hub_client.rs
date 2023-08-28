@@ -7,7 +7,7 @@ use crate::{
 };
 use eframe::{
     egui::{self, Layout, Ui},
-    epaint::{text, Color32, FontFamily, FontId},
+    epaint::{Color32, FontFamily, FontId},
 };
 use egui_extras::{Column, TableBuilder};
 use inline_tweak::*;
@@ -70,12 +70,12 @@ impl HubClient {
             Hub::default()
         };
 
-        let client = Self {
+        
+
+        Self {
             hub,
             current_tab: WindowTab::Projects,
-        };
-
-        client
+        }
     }
 
     fn save_config(&mut self, rebuild: bool) {
@@ -89,8 +89,8 @@ impl HubClient {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
                 match self.current_tab {
-                    WindowTab::Projects => self.draw_project(&ctx, ui),
-                    WindowTab::Editors => self.draw_editors(&ctx, ui),
+                    WindowTab::Projects => self.draw_project(ctx, ui),
+                    WindowTab::Editors => self.draw_editors(ctx, ui),
                 };
             });
         });
@@ -99,7 +99,7 @@ impl HubClient {
     fn draw_editors(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
         ui.label(egui::RichText::new("Editor search paths").heading());
         ui.add_space(VERTICAL_SPACING);
-        let text_height = egui::TextStyle::Body.resolve(&ui.style()).size * 2.0;
+        let text_height = egui::TextStyle::Body.resolve(ui.style()).size * 2.0;
 
         let paths = self.hub.config.unity_search_paths.clone();
         for (i, path) in paths.iter().enumerate() {
@@ -117,7 +117,6 @@ impl HubClient {
                 {
                     self.hub.config.unity_search_paths.remove(i);
                     self.save_config(true);
-                    return;
                 }
             });
         }
@@ -198,23 +197,31 @@ impl HubClient {
                     )
                     .context_menu(|ui| {
                         ui.menu_button("Open in", |ui| {
+                            if !editor_for_project_exists {
+                                ui.add_enabled(
+                                    false,
+                                    egui::Button::new(
+                                        egui::RichText::new(format!(
+                                            "Missing: {}",
+                                            &project.version
+                                        ))
+                                        .strong(),
+                                    ),
+                                );
+                            }
                             for editor in &self.hub.config.editors_configurations {
-                                let mut text = egui::RichText::new(format!("{}", &editor.version));
+                                let mut text = egui::RichText::new(editor.version.to_string());
                                 if editor.version.contains(&project.version) {
                                     text = text.strong().color(Color32::GREEN);
                                 }
                                 if ui.button(text).clicked() {
-                                    Hub::run_project(&editor, &project);
+                                    Hub::run_project(editor, project);
                                     ui.close_menu();
                                 }
                             }
                         });
 
-                        if ui
-                            .button("Open directory")
-                            .on_hover_text(&project.path)
-                            .clicked()
-                        {
+                        if ui.button("Open directory").clicked() {
                             use std::process::Command;
                             Command::new(FILE_MANAGER)
                                 .arg(&project.path)
@@ -223,9 +230,10 @@ impl HubClient {
                             ui.close_menu();
                         }
                     });
-                    ui.label(egui::RichText::new(format!("{}", &project.title)).heading());
+                    ui.label(egui::RichText::new(project.title.to_string()).heading())
+                        .on_hover_text(&project.path);
 
-                    if project.branch.len() > 0 {
+                    if !project.branch.is_empty() {
                         ui.add_space(TOP_SIDE_MARGIN);
                         const MAX_BRANCH_LEN: usize = 15;
                         let is_long = project.branch.len() > MAX_BRANCH_LEN;
@@ -248,16 +256,21 @@ impl HubClient {
                         text_height,
                     ));
                     let text = if editor_for_project_exists {
-                        egui::RichText::new(format!("{}", "Open"))
+                        egui::RichText::new("Open".to_string())
                     } else {
-                        egui::RichText::new(format!("{}", "Open")).weak()
+                        egui::RichText::new("Missing").weak()
                     };
+
                     let button = egui::Button::new(text);
                     let added_button = ui.add_sized([btn_width, text_height], button);
-                    if added_button.clicked() {
-                        if editor_for_project_exists {
-                            self.hub.run_project_nr(i);
-                        }
+
+                    if !editor_for_project_exists {
+                        added_button.on_hover_text_at_pointer(format!(
+                            "Missing {} Unity",
+                            &project.version
+                        ));
+                    } else if added_button.clicked() {
+                        self.hub.run_project_nr(i);
                     }
                 });
             });
@@ -293,10 +306,8 @@ impl HubClient {
     fn draw_project_header(&mut self, _ctx: &egui::Context, ui: &mut Ui) {
         add_header(ui);
 
-        let available_width = ui.available_width()
-            - TOP_BUTTON_WIDTH
-            - TOP_SIDE_MARGIN
-            - TOP_SIDE_MARGIN;
+        let available_width =
+            ui.available_width() - TOP_BUTTON_WIDTH - TOP_SIDE_MARGIN - TOP_SIDE_MARGIN;
         ui.allocate_space(egui::vec2(available_width, HEADER_HEIGHT));
         if ui
             .add_sized(
@@ -381,8 +392,8 @@ impl eframe::App for HubClient {
                         .with_cross_align(eframe::emath::Align::Center),
                     |ui| {
                         match self.current_tab {
-                            WindowTab::Projects => self.draw_project_header(&ctx, ui),
-                            WindowTab::Editors => self.draw_editors_header(&ctx, ui),
+                            WindowTab::Projects => self.draw_project_header(ctx, ui),
+                            WindowTab::Editors => self.draw_editors_header(ctx, ui),
                         };
                     },
                 );
@@ -403,6 +414,6 @@ impl eframe::App for HubClient {
                 );
             });
         });
-        self.draw_central_panel(&ctx);
+        self.draw_central_panel(ctx);
     }
 }
