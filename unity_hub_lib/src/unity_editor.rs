@@ -2,6 +2,7 @@ use crate::consts;
 use crate::project_template::ProjectTemplate;
 use std::borrow::Borrow;
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, Hash)]
@@ -38,8 +39,14 @@ impl UnityEditor {
             let vs_version_check = VSVersionInfo::parse(&image);
 
             if let Some(string_file_info) = vs_version_check.unwrap().string_file_info {
-                let hashmap = string_file_info.children[0].string_map();
-                if let Some(result_version) = hashmap.get("ProductVersion") {
+                let hashmap_result = string_file_info.children[0].string_map();
+
+                let hash_map = match hashmap_result {
+                    Ok(r) => r,
+                    Err(_) => HashMap::new(),
+                };
+
+                if let Some(result_version) = hash_map.get("ProductVersion") {
                     version = Some(result_version.clone());
                     if let Some(short) = result_version.clone().split("_").take(1).next() {
                         version = Some(short.to_string());

@@ -70,8 +70,6 @@ impl HubClient {
             Hub::default()
         };
 
-        
-
         Self {
             hub,
             current_tab: WindowTab::Projects,

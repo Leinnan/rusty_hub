@@ -31,10 +31,10 @@ impl Configuration {
 
     fn is_unity_dir(entry: &DirEntry) -> bool {
         #[cfg(windows)]
-        let uninstall_exists = entry.path().clone().join("Uninstall.exe").exists();
+        let uninstall_exists = entry.path().join("Uninstall.exe").exists();
         #[cfg(unix)]
         let uninstall_exists = true; // just check that on windows only
-        let unity_exe_exists = entry.path().clone().join(consts::UNITY_EXE_NAME).exists();
+        let unity_exe_exists = entry.path().join(consts::UNITY_EXE_NAME).exists();
         uninstall_exists && unity_exe_exists
     }
 

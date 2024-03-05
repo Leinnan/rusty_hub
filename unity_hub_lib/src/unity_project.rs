@@ -12,7 +12,6 @@ pub struct UnityProject {
     pub edit_time: std::time::SystemTime,
 }
 
-
 impl PartialEq for UnityProject {
     fn eq(&self, other: &Self) -> bool {
         self.path == other.path
@@ -88,7 +87,6 @@ impl UnityProject {
         if !UnityProject::is_project_at_path(&path) {
             return None;
         }
-        
 
         let mut project = UnityProject {
             path: path.to_string(),
@@ -106,7 +104,6 @@ impl UnityProject {
     }
 
     pub fn update_info(&mut self) {
-
         let is_project = UnityProject::is_project_at_path(&self.path);
         self.is_valid = is_project;
 
@@ -116,7 +113,6 @@ impl UnityProject {
 
         let mut base_path = Path::new(&self.path);
         self.version = Self::get_version_at_path(&self.path).unwrap();
-        
 
         match self.try_read_from_path(base_path) {
             None => {
@@ -131,7 +127,7 @@ impl UnityProject {
             }
             Some(value) => {
                 self.branch = value;
-            },
+            }
         }
 
         if let Ok(meta) = std::fs::metadata(&self.path) {
@@ -143,13 +139,16 @@ impl UnityProject {
 
     fn try_read_from_path(&self, path: &std::path::Path) -> Option<String> {
         const HEAD_PREFIX: &str = "ref: refs/heads/";
-        
+
         let head_path = Path::new(&path).join(".git").join("HEAD");
-        if !head_path.exists() { return None;}
-        let head_content =
-            std::fs::read_to_string(&head_path).expect("Could not read HEAD file");
+        if !head_path.exists() {
+            return None;
+        }
+        let head_content = std::fs::read_to_string(&head_path).expect("Could not read HEAD file");
         if head_content.contains(HEAD_PREFIX) {
             Some(head_content.replace(HEAD_PREFIX, "").trim().to_string())
-        } else {None}
+        } else {
+            None
+        }
     }
 }
