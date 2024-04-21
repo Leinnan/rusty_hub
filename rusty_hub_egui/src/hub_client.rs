@@ -136,7 +136,8 @@ impl HubClient {
             body.rows(
                 text_height,
                 self.hub.config.editors_configurations.len(),
-                |row_index, mut row| {
+                |mut row| {
+                    let row_index = row.index();
                     let editor = &self.hub.config.editors_configurations[row_index];
                     row.col(|ui| {
                         ui.vertical_centered_justified(|ui| {
@@ -329,7 +330,7 @@ impl HubClient {
                     }
                     1 => message = message.set_description("Project founded!"),
                     _ => {
-                        message = message.set_description(&format!("Founded {} projects.", amount))
+                        message = message.set_description(format!("Founded {} projects.", amount))
                     }
                 }
                 message.show();

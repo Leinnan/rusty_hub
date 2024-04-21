@@ -16,14 +16,13 @@ opt-level = 2
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-confy = "^0.5.0"
-eframe = "0.21.2"
-egui_extras = "0.21.0"
+confy = "0.6"
+eframe = "0.27"
+egui_extras = "0.27"
 unity_hub_lib = { path="../unity_hub_lib" }
-image = { version = "0.24.0", default-features = false, features = ["png"] }
-rfd = "0.11.1"
-inline_tweak = "1.0.8"
-poll-promise = "0.2.0"
+rfd = "0.14"
+inline_tweak = "1"
+poll-promise = "0.3"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"
