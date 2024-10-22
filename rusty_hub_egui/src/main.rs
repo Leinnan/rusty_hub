@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-extern crate confy;
+
 use consts::{APP_NAME, VERSION};
 use eframe::egui;
 
@@ -30,6 +30,6 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         &format!("{} v {}", APP_NAME, VERSION),
         options,
-        Box::new(|cc| Box::new(crate::hub_client::HubClient::new(cc))),
+        Box::new(|cc| Ok(Box::new(crate::hub_client::HubClient::new(cc)))),
     )
 }

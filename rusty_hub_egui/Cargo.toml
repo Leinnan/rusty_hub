@@ -17,10 +17,10 @@ opt-level = 2
 
 [dependencies]
 confy = "0.6"
-eframe = "0.27"
-egui_extras = "0.27"
+eframe = "0.29"
+egui_extras = "0.29"
 unity_hub_lib = { path="../unity_hub_lib" }
-rfd = "0.14"
+rfd = "0.15"
 inline_tweak = "1"
 poll-promise = "0.3"
 

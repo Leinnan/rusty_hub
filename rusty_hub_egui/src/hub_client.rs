@@ -6,7 +6,7 @@ use crate::{
     window_tab::WindowTab,
 };
 use eframe::{
-    egui::{self, Layout, Ui},
+    egui::{self, CursorIcon, Layout, Ui},
     epaint::{Color32, FontFamily, FontId},
 };
 use egui_extras::{Column, TableBuilder};
@@ -352,13 +352,16 @@ impl HubClient {
         }
         .font(FontId::new(font_size, FontFamily::Proportional));
 
-        ui.add_sized(
+        let response = ui.add_sized(
             button_size,
-            egui::Label::new(rich_text)
-                .wrap(false)
+            egui::Label::new(rich_text).selectable(false)
                 .sense(egui::Sense::click()),
-        )
-        .clicked()
+        );
+        if response.hovered() {
+            ui.output_mut(|o| o.cursor_icon = CursorIcon::PointingHand);
+        }
+
+        response.clicked()
     }
 
     fn draw_side_panel(&mut self, ui: &mut Ui) {
@@ -378,7 +381,7 @@ fn add_header(ui: &mut Ui) {
         .font(FontId::new(26.0, FontFamily::Name("semibold".into())))
         .strong();
     ui.allocate_space(egui::vec2(TOP_SIDE_MARGIN, HEADER_HEIGHT));
-    ui.add(egui::Label::new(text));
+    ui.add(egui::Label::new(text).selectable(false));
 }
 
 impl eframe::App for HubClient {
