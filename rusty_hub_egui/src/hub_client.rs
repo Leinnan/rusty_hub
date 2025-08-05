@@ -22,39 +22,68 @@ pub struct HubClient {
 fn setup_custom_fonts(ctx: &egui::Context) {
     // Start with the default fonts (we will be adding to them rather than replacing them).
     let mut fonts = egui::FontDefinitions::default();
+    if let Ok((regular, semibold)) = get_fonts() {
+        fonts.font_data.insert(
+            "regular".to_owned(),
+            egui::FontData::from_owned(regular).into(),
+        );
+        fonts.font_data.insert(
+            "semibold".to_owned(),
+            egui::FontData::from_owned(semibold).into(),
+        );
 
-    // Install my own font (maybe supporting non-latin characters).
-    // .ttf and .otf files supported.
-    fonts.font_data.insert(
-        "regular".to_owned(),
-        egui::FontData::from_static(include_bytes!("../static/Inter-Regular.ttf")),
-    );
-    fonts.font_data.insert(
-        "semibold".to_owned(),
-        egui::FontData::from_static(include_bytes!("../static/Inter-SemiBold.ttf")),
-    );
+        // Put my font first (highest priority) for proportional text:
+        fonts
+            .families
+            .entry(egui::FontFamily::Proportional)
+            .or_default()
+            .insert(0, "regular".to_owned());
+        fonts
+            .families
+            .entry(egui::FontFamily::Name("semibold".into()))
+            .or_default()
+            .insert(0, "semibold".to_owned());
 
-    // Put my font first (highest priority) for proportional text:
-    fonts
-        .families
-        .entry(egui::FontFamily::Proportional)
-        .or_default()
-        .insert(0, "regular".to_owned());
-    fonts
-        .families
-        .entry(egui::FontFamily::Name("semibold".into()))
-        .or_default()
-        .insert(0, "semibold".to_owned());
+        // Put my font as last fallback for monospace:
+        fonts
+            .families
+            .entry(egui::FontFamily::Monospace)
+            .or_default()
+            .push("regular".to_owned());
 
-    // Put my font as last fallback for monospace:
-    fonts
-        .families
-        .entry(egui::FontFamily::Monospace)
-        .or_default()
-        .push("regular".to_owned());
+        // Tell egui to use these fonts:
+        ctx.set_fonts(fonts);
+    }
 
-    // Tell egui to use these fonts:
-    ctx.set_fonts(fonts);
+    ctx.style_mut(|style| {
+        for font_id in style.text_styles.values_mut() {
+            font_id.size *= 1.4;
+        }
+    });
+}
+
+#[cfg(not(windows))]
+fn get_fonts() -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
+    use std::fs;
+
+    let font_path = std::path::Path::new("/System/Library/Fonts");
+
+    let regular = fs::read(font_path.join("SFNSRounded.ttf"))?;
+    let semibold = fs::read(font_path.join("SFCompact.ttf"))?;
+
+    Ok((regular, semibold))
+}
+
+#[cfg(windows)]
+fn get_fonts() -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
+    use std::fs;
+    let app_data = std::env::var("APPDATA")?;
+    let font_path = std::path::Path::new(&app_data);
+
+    let regular = fs::read(font_path.join("../Local/Microsoft/Windows/Fonts/aptos.ttf"))?;
+    let semibold = fs::read(font_path.join("../Local/Microsoft/Windows/Fonts/aptos-semibold.ttf"))?;
+
+    Ok((regular, semibold))
 }
 
 impl HubClient {
@@ -167,7 +196,7 @@ impl HubClient {
                                             .arg(&editor.base_path)
                                             .spawn()
                                             .unwrap();
-                                        ui.close_menu();
+                                        ui.close();
                                     }
                                 });
                             },
@@ -189,7 +218,7 @@ impl HubClient {
                 } else {
                     egui::Color32::TRANSPARENT
                 };
-                egui::Frame::none().fill(color).show(ui, |ui| {
+                egui::Frame::NONE.fill(color).show(ui, |ui| {
                     ui.add_sized(
                         [text_height, text_height],
                         egui::Button::new("⚙").frame(false),
@@ -215,7 +244,7 @@ impl HubClient {
                                 }
                                 if ui.button(text).clicked() {
                                     Hub::run_project(editor, project);
-                                    ui.close_menu();
+                                    ui.close();
                                 }
                             }
                         });
@@ -226,7 +255,7 @@ impl HubClient {
                                 .arg(&project.path)
                                 .spawn()
                                 .unwrap();
-                            ui.close_menu();
+                            ui.close();
                         }
                     });
                     ui.label(egui::RichText::new(project.title.to_string()).heading())
@@ -329,9 +358,7 @@ impl HubClient {
                             .set_level(rfd::MessageLevel::Warning)
                     }
                     1 => message = message.set_description("Project founded!"),
-                    _ => {
-                        message = message.set_description(format!("Founded {} projects.", amount))
-                    }
+                    _ => message = message.set_description(format!("Founded {} projects.", amount)),
                 }
                 message.show();
                 self.save_config(true);
@@ -354,7 +381,8 @@ impl HubClient {
 
         let response = ui.add_sized(
             button_size,
-            egui::Label::new(rich_text).selectable(false)
+            egui::Label::new(rich_text)
+                .selectable(false)
                 .sense(egui::Sense::click()),
         );
         if response.hovered() {
@@ -409,7 +437,7 @@ impl eframe::App for HubClient {
             });
         egui::TopBottomPanel::bottom("bottomPanel").show(ctx, |ui| {
             ui.with_layout(Layout::right_to_left(eframe::emath::Align::Center), |ui| {
-                egui::widgets::global_dark_light_mode_switch(ui);
+                egui::widgets::global_theme_preference_switch(ui);
                 ui.hyperlink_to(
                     format!("{} v {}", egui::special_emojis::GITHUB, VERSION),
                     HOMEPAGE,

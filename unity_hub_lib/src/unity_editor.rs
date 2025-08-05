@@ -1,5 +1,6 @@
 use crate::consts;
 use crate::project_template::ProjectTemplate;
+use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -25,7 +26,7 @@ impl UnityEditor {
         let base_path = Path::new(path);
         let exe_path = base_path.join(consts::UNITY_EXE_NAME);
         let meta = std::fs::metadata(&exe_path);
-        if !meta.is_ok() || !meta.unwrap().is_file() {
+        if !meta.is_ok_and(|meta| meta.is_file()) {
             return None;
         }
 
@@ -91,7 +92,7 @@ impl UnityEditor {
         let mut platforms = Vec::new();
         let base_path = Path::new(unity_folder).join("Data").join("PlaybackEngines");
 
-        if !std::fs::metadata(&base_path).is_ok() {
+        if std::fs::metadata(&base_path).is_err() {
             return platforms;
         }
         let dir = std::fs::read_dir(base_path);

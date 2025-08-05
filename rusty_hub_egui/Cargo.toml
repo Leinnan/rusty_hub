@@ -5,24 +5,24 @@ edition = "2021"
 homepage = "https://github.com/Leinnan/rusty_hub"
 build = "build.rs"
 
-[profile.release]
-opt-level = 'z'
-panic = 'abort'
-lto = true
-
-[profile.dev.package."*"]
-opt-level = 2
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 confy = "0.6"
-eframe = "0.29"
-egui_extras = "0.29"
+eframe = { version = "0.32", default-features = false, features = [
+    #"accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+    "default_fonts", # Embed the default egui fonts.
+    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "persistence",   # Enable restoring app state when restarting the app.
+    "wayland",       # To support Linux (and CI)
+] }
+egui = "0.32"
+egui_extras = "0.32"
 unity_hub_lib = { path="../unity_hub_lib" }
 rfd = "0.15"
 inline_tweak = "1"
-poll-promise = "0.3"
+anyhow = "1"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"

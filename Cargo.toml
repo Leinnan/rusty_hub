@@ -1,0 +1,13 @@
+
+
+[workspace]
+resolver = "3"
+members = ["rusty_hub_egui", "unity_hub_lib"]
+
+[profile.release]
+opt-level = 'z'
+panic = 'abort'
+lto = true
+
+[profile.dev.package."*"]
+opt-level = 2

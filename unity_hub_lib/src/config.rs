@@ -1,5 +1,6 @@
 use crate::{consts, unity_editor::UnityEditor};
 use dpc_pariter::IteratorExt;
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use walkdir::{DirEntry, WalkDir};
 

@@ -17,19 +17,14 @@ fn main() -> eframe::Result<()> {
                 eframe::icon_data::from_png_bytes(&include_bytes!("../static/hub.png")[..])
                     .expect("Failed to load icon"),
             ),
-        // always_on_top: false,
-        // maximized: false,
-        // decorated: true,
-        // fullscreen: false,
-        // drag_and_drop_support: false,
-        // initial_window_size: Some(egui::vec2(850.0, 400.0)),
-        // min_window_size: Some(egui::vec2(850.0, 400.0)),
-        // icon_data: Some(icon),
         ..Default::default()
     };
     eframe::run_native(
         &format!("{} v {}", APP_NAME, VERSION),
         options,
-        Box::new(|cc| Ok(Box::new(crate::hub_client::HubClient::new(cc)))),
+        Box::new(|cc| {
+            egui_extras::install_image_loaders(&cc.egui_ctx);
+            Ok(Box::new(crate::hub_client::HubClient::new(cc)))
+        }),
     )
 }

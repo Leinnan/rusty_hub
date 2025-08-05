@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::{ops::Sub, path::Path, str};
 
 use crate::consts;
@@ -76,20 +77,20 @@ impl UnityProject {
         iter.next();
         let project_version = iter.next().unwrap().to_string();
 
-        return Some(project_version);
+        Some(project_version)
     }
 
     pub fn try_get_project_at_path(path: &str) -> Option<UnityProject> {
         #[cfg(windows)]
         let path = path.trim_matches(char::from(0)).replace("/", "\\");
-        #[cfg(unix)]
-        let path = path.trim_matches(char::from(0));
+        #[cfg(not(windows))]
+        let path = path.trim_matches(char::from(0)).to_string();
         if !UnityProject::is_project_at_path(&path) {
             return None;
         }
 
         let mut project = UnityProject {
-            path: path.to_string(),
+            path: path.clone(),
             title: path.split(consts::SLASH).last().unwrap().to_string(),
             branch: String::new(),
             version: String::new(),
