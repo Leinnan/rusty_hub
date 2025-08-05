@@ -3,13 +3,13 @@ name: build
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
     paths:
-      - '.github/**'
-      - 'rusty_hub_egui/**'
-      - 'unity_hub_lib/**'
+      - ".github/**"
+      - "rusty_hub_egui/**"
+      - "unity_hub_lib/**"
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 env:
   CARGO_TERM_COLOR: always
@@ -18,42 +18,42 @@ jobs:
   build-unix:
     runs-on: ubuntu-latest
     steps:
-    - name: Hack sources.list
-      run: sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu/|http://mirror.arizona.edu/ubuntu/|g' /etc/apt/sources.list
-    - name: Update res
-      run: sudo apt-get update
-    - name: Install dependencies
-      run: sudo apt-get install -y mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libatk1.0-dev librust-gdk-sys-dev
-    - run: rustup toolchain install stable --profile minimal
-    - uses: Swatinem/rust-cache@v2
-      with:
-        # An explicit cache key that is used instead of the automatic `job`-based
-        # cache key and is thus stable across jobs.
-        # Default: empty
-        shared-key: ""
-        # An additional cache key that is added alongside the automatic `job`-based
-        # cache key and can be used to further differentiate jobs.
-        # Default: empty
-        key: ""
-        # A whitespace separated list of env-var *prefixes* who's value contributes
-        # to the environment cache key.
-        # The env-vars are matched by *prefix*, so the default `RUST` var will
-        # match all of `RUSTC`, `RUSTUP_*`, `RUSTFLAGS`, `RUSTDOC_*`, etc.
-        # Default: "CARGO CC CFLAGS CXX CMAKE RUST"
-        env-vars: ""
-        # The cargo workspaces and target directory configuration.
-        # These entries are separated by newlines and have the form
-        # `$workspace -> $target`. The `$target` part is treated as a directory
-        # relative to the `$workspace` and defaults to "target" if not explicitly given.
-        # Default: ". -> target"
-        workspaces: ""
-        # Determines if the cache should be saved even when the workflow has failed.
-        # Default: "false"
-        cache-on-failure: ""
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cd rusty_hub_egui && cargo build --verbose
-    - uses: actions/upload-artifact@v3
-      with:
-        name: upload executable
-        path: rusty_hub_egui/target/release/rusty_hub_egui
+      - name: Hack sources.list
+        run: sudo sed -i 's|http://azure.archive.ubuntu.com/ubuntu/|http://mirror.arizona.edu/ubuntu/|g' /etc/apt/sources.list
+      - name: Update res
+        run: sudo apt-get update
+      - name: Install dependencies
+        run: sudo apt-get install -y mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libatk1.0-dev librust-gdk-sys-dev
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+        with:
+          # An explicit cache key that is used instead of the automatic `job`-based
+          # cache key and is thus stable across jobs.
+          # Default: empty
+          shared-key: ""
+          # An additional cache key that is added alongside the automatic `job`-based
+          # cache key and can be used to further differentiate jobs.
+          # Default: empty
+          key: ""
+          # A whitespace separated list of env-var *prefixes* who's value contributes
+          # to the environment cache key.
+          # The env-vars are matched by *prefix*, so the default `RUST` var will
+          # match all of `RUSTC`, `RUSTUP_*`, `RUSTFLAGS`, `RUSTDOC_*`, etc.
+          # Default: "CARGO CC CFLAGS CXX CMAKE RUST"
+          env-vars: ""
+          # The cargo workspaces and target directory configuration.
+          # These entries are separated by newlines and have the form
+          # `$workspace -> $target`. The `$target` part is treated as a directory
+          # relative to the `$workspace` and defaults to "target" if not explicitly given.
+          # Default: ". -> target"
+          workspaces: ""
+          # Determines if the cache should be saved even when the workflow has failed.
+          # Default: "false"
+          cache-on-failure: ""
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cd rusty_hub_egui && cargo build --verbose
+      - uses: actions/upload-artifact@v4
+        with:
+          name: upload executable
+          path: rusty_hub_egui/target/release/rusty_hub_egui

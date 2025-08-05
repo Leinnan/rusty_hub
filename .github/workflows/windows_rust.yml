@@ -10,12 +10,12 @@ jobs:
   build:
     runs-on: windows-2022
     steps:
-    - run: rustup toolchain install stable --profile minimal
-    - uses: Swatinem/rust-cache@v2
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cd rusty_hub_egui && cargo build --release --verbose
-    - uses: actions/upload-artifact@v3
-      with:
-        name: build-exe
-        path: rusty_hub_egui/target/release/*exe
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cd rusty_hub_egui && cargo build --release --verbose
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-exe
+          path: rusty_hub_egui/target/release/*exe
