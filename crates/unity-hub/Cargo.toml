@@ -3,6 +3,7 @@ name = "unity-hub"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
 description = "Finds Unity editors and projects on disk; knows nothing about the UI."
 
 [dependencies]

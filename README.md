@@ -50,3 +50,7 @@ just snapshots   # re-record the UI snapshot images in tests/snapshots
 Big thanks to https://github.com/unitycoder/UnityLauncherPro 
 
 Most of the required information about how data is stored by Unity HUB is taken from there.
+
+## License
+
+[MIT](LICENSE)
