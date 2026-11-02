@@ -3,3 +3,8 @@
 unity_hub_lib/Cargo.lock
 Cargo.lock
 /*/.idea
+
+# egui_kittest snapshot scratch files
+**/snapshots/*.diff.png
+**/snapshots/*.old.png
+**/snapshots/*.new.png

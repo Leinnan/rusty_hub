@@ -1,8 +1,69 @@
+[package]
+name = "rusty_hub"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+homepage = "https://github.com/Leinnan/rusty_hub"
+build = "build.rs"
 
+[dependencies]
+confy = "2"
+directories = "6"
+eframe = { version = "0.37", default-features = false, features = [
+    "clipboard",     # Copy and paste, including copying selected label text.
+    "default_fonts", # Embed the default egui fonts.
+    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "links",         # Open hyperlinks in the browser.
+    "persistence",   # Enable restoring app state when restarting the app.
+    "wayland",       # To support Linux (and CI)
+    "x11",           # To support Linux
+] }
+env_logger = { version = "0.11", default-features = false, features = ["auto-color"] }
+log = "0.4"
+lucide-icons = "1.66"
+rfd = "0.17"
+serde = { version = "1", features = ["derive"] }
+unity-hub = { path = "crates/unity-hub" }
+
+[dev-dependencies]
+egui_kittest = { version = "0.37", features = ["eframe", "wgpu", "snapshot"] }
+tempfile = "3"
+
+[build-dependencies]
+ico = "0.6"
+resvg = { version = "0.49", default-features = false }
+
+[target.'cfg(windows)'.build-dependencies]
+winresource = "0.1"
+
+[lints]
+workspace = true
 
 [workspace]
-resolver = "3"
-members = ["rusty_hub_egui", "unity_hub_lib"]
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.4.0"
+edition = "2024"
+rust-version = "1.95"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+cast_possible_truncation = "allow"
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+missing_panics_doc = "allow"
+missing_errors_doc = "allow"
+# `assert!(list.is_empty())` reads better than comparing to a typed empty array.
+assert_is_empty = "allow"
+# Settings and panel visibility are naturally flags.
+struct_excessive_bools = "allow"
+# Immediate-mode UI functions are long by nature.
+too_many_lines = "allow"
 
 [profile.release]
 opt-level = 'z'
