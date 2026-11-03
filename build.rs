@@ -1,61 +1,38 @@
-//! Renders the app icon from its SVG source: a PNG for the window, and an ICO
-//! that is embedded in the executable on Windows.
+//! Renders the app icon from its SVG source: a PNG for the window, and on
+//! Windows an ICO embedded in the executable with its version info.
 
-use std::{env, error::Error, fs, io::Cursor, path::Path};
-
-use resvg::{
-    tiny_skia::{Pixmap, Transform},
-    usvg,
-};
+use std::{env, error::Error, fs, path::Path};
 
 const SOURCE: &str = "assets/icon/icon.svg";
-/// Size of the window icon (px).
-const WINDOW_ICON_SIZE: u32 = 512;
-/// Sizes inside the ICO (px).
-const ICO_SIZES: [u32; 6] = [16, 24, 32, 48, 64, 256];
 
 fn main() -> Result<(), Box<dyn Error>> {
     println!("cargo:rerun-if-changed={SOURCE}");
+    println!("cargo:rerun-if-changed=assets/package/windows/app.manifest");
     println!("cargo:rerun-if-changed=build.rs");
 
     let out_dir = env::var("OUT_DIR")?;
     let out_dir = Path::new(&out_dir);
-    let tree = usvg::Tree::from_data(&fs::read(SOURCE)?, &usvg::Options::default())?;
+    let tree = app_icon::load(Path::new(SOURCE))?;
 
     fs::write(
         out_dir.join("icon.png"),
-        render_png(&tree, WINDOW_ICON_SIZE)?,
+        app_icon::render_png(&tree, app_icon::WINDOW_SIZE)?,
     )?;
-
     let ico_path = out_dir.join("icon.ico");
-    let mut icons = ico::IconDir::new(ico::ResourceType::Icon);
-    for size in ICO_SIZES {
-        let image = ico::IconImage::read_png(Cursor::new(render_png(&tree, size)?))?;
-        // Windows tools only reliably take PNG data in the largest entry.
-        icons.add_entry(if size < 256 {
-            ico::IconDirEntry::encode_as_bmp(&image)?
-        } else {
-            ico::IconDirEntry::encode_as_png(&image)?
-        });
-    }
-    icons.write(fs::File::create(&ico_path)?)?;
+    fs::write(&ico_path, app_icon::render_ico(&tree)?)?;
 
+    // Cross-compiling would need a resource compiler for the target. Releases
+    // for Windows are built on Windows.
     #[cfg(windows)]
     {
         let mut resource = winresource::WindowsResource::new();
-        resource.set_icon(ico_path.to_str().ok_or("OUT_DIR isn't valid UTF-8")?);
+        resource
+            .set_icon(ico_path.to_str().ok_or("OUT_DIR isn't valid UTF-8")?)
+            .set_manifest_file("assets/package/windows/app.manifest")
+            .set("ProductName", "Rusty Hub")
+            .set("FileDescription", "Rusty Hub")
+            .set("LegalCopyright", "Copyright (c) 2022 Piotr Siuszko");
         resource.compile()?;
     }
     Ok(())
-}
-
-fn render_png(tree: &usvg::Tree, size: u32) -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut pixmap = Pixmap::new(size, size).ok_or("the icon size is zero")?;
-    let scale = size as f32 / tree.size().width();
-    resvg::render(
-        tree,
-        Transform::from_scale(scale, scale),
-        &mut pixmap.as_mut(),
-    );
-    Ok(pixmap.encode_png()?)
 }

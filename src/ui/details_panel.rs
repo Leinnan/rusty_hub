@@ -2,7 +2,7 @@
 
 use std::time::SystemTime;
 
-use eframe::egui::{self, Align, Button, Grid, Label, Layout, RichText, Ui};
+use eframe::egui::{self, Align, Button, Grid, Label, Layout, RichText, ScrollArea, Ui};
 use unity_hub::unity_project::UnityProject;
 
 use super::{
@@ -21,6 +21,12 @@ use crate::{
 
 /// Render the panel contents.
 pub fn render(ui: &mut Ui, state: &UiState) {
+    ScrollArea::vertical()
+        .auto_shrink([false, true])
+        .show(ui, |ui| contents(ui, state));
+}
+
+fn contents(ui: &mut Ui, state: &UiState) {
     section_header(ui, "Details");
     let Some(project) = state.selected_project() else {
         ui.add_space(4.0);
@@ -66,6 +72,20 @@ pub fn render(ui: &mut Ui, state: &UiState) {
         if ui.add(secondary_button("Copy Path")).clicked() {
             ProjectCmd::CopyPath(project.path.clone()).schedule();
         }
+        let idle = state.busy.is_none();
+        if ui
+            .add_enabled(idle, secondary_button("Project Settings…"))
+            .clicked()
+        {
+            ProjectCmd::RequestSettings(project.path.clone()).schedule();
+        }
+        let can_change = idle && project.is_valid && !state.editors_newest_first().is_empty();
+        if ui
+            .add_enabled(can_change, secondary_button("Change Version…"))
+            .clicked()
+        {
+            ProjectCmd::RequestChangeVersion(project.path.clone()).schedule();
+        }
         ui.add_space(8.0);
         let remove = ui.add_enabled(
             state.busy.is_none(),
@@ -91,6 +111,32 @@ fn facts(ui: &mut Ui, project: &UnityProject, status: ProjectStatus) {
             fact(ui, "Editor", RichText::new(editor).color(color));
             if !project.branch.is_empty() {
                 fact(ui, "Branch", RichText::new(&project.branch).color(TEXT));
+            }
+            if !project.render_pipeline.is_empty() {
+                fact(
+                    ui,
+                    "Pipeline",
+                    RichText::new(&project.render_pipeline).color(TEXT),
+                );
+            }
+            let folder = std::path::Path::new(&project.path).file_name();
+            if folder.is_some_and(|name| name.to_string_lossy() != project.title) {
+                let folder = folder.map(|name| name.to_string_lossy().into_owned());
+                fact(
+                    ui,
+                    "Folder",
+                    RichText::new(folder.unwrap_or_default()).color(TEXT),
+                );
+            }
+            if !project.launch_args.is_empty() {
+                fact(
+                    ui,
+                    "Arguments",
+                    RichText::new(&project.launch_args).color(TEXT),
+                );
+            }
+            if let Some(platform) = &project.launch_platform {
+                fact(ui, "Platform", RichText::new(platform).color(TEXT));
             }
             let modified = relative_time(project.edit_time, SystemTime::now());
             fact(ui, "Modified", RichText::new(modified).color(TEXT));
@@ -123,6 +169,28 @@ pub fn project_menu(ui: &mut Ui, state: &UiState, project: &UnityProject) {
     }
     if ui.button("Copy Path").clicked() {
         ProjectCmd::CopyPath(project.path.clone()).schedule();
+        ui.close();
+    }
+    if ui.button("Show Logs").clicked() {
+        let logs = std::path::Path::new(&project.path).join("Logs");
+        ProjectCmd::Reveal(logs.to_string_lossy().into_owned()).schedule();
+        ui.close();
+    }
+    ui.separator();
+    let idle = state.busy.is_none();
+    if ui
+        .add_enabled(idle, Button::new("Project Settings…"))
+        .clicked()
+    {
+        ProjectCmd::RequestSettings(project.path.clone()).schedule();
+        ui.close();
+    }
+    let can_change = idle && project.is_valid && !state.editors_newest_first().is_empty();
+    if ui
+        .add_enabled(can_change, Button::new("Change Version…"))
+        .clicked()
+    {
+        ProjectCmd::RequestChangeVersion(project.path.clone()).schedule();
         ui.close();
     }
     ui.separator();

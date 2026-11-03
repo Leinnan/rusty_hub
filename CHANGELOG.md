@@ -1,3 +1,17 @@
+# [0.5.0]
+- Create projects: choose a name, location, editor, platform and template
+- Download Unity's online templates (needs the `curl` command; nothing goes online until you open the Online list)
+- Optionally start a git repository with a Unity `.gitignore` for a new project
+- Templates show their real names and descriptions
+- Project settings: your own title, launch arguments and a platform to launch on
+- Change a project's Unity version
+- Remove projects whose folders are gone, all at once
+- Projects show their product name and render pipeline, and Plastic SCM and git worktree branches
+- Run an editor on its own, prefer one for new projects, and see how many projects use each
+- Links to each editor's release notes and Unity's log and cache folders
+- Find editors on Linux, where the version was wrong and the default search path was never expanded
+- Packages: a macOS app and disk image, a per-user Windows installer, and a Linux tarball, built with `just`
+
 # [0.4.0]
 - New macOS-style dark UI with a sidebar, details panel, toolbar and status bar
 - Search and sort projects, with keyboard shortcuts

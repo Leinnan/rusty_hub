@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Rusty Hub
+GenericName=Unity Project Launcher
+Comment=Find, create and open Unity projects
+Exec=rusty_hub
+Icon=io.github.Leinnan.RustyHub
+Terminal=false
+Categories=Development;
+Keywords=unity;hub;project;launcher;editor;gamedev;
+StartupWMClass=io.github.Leinnan.RustyHub

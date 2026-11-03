@@ -2,6 +2,8 @@
 //! area. Shared harness helpers live here.
 
 mod editors;
+mod new_project;
+mod project_sheets;
 mod projects;
 
 use std::time::{Duration, SystemTime};
@@ -22,6 +24,11 @@ pub(super) fn project(title: &str, version: &str, branch: &str, days_ago: u64) -
         version: version.to_owned(),
         branch: branch.to_owned(),
         is_valid: true,
+        product_name: String::new(),
+        render_pipeline: String::new(),
+        custom_title: None,
+        launch_args: String::new(),
+        launch_platform: None,
         edit_time: SystemTime::now() - Duration::from_secs(days_ago * DAY),
     }
 }

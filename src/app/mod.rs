@@ -3,6 +3,7 @@
 
 mod editors;
 mod keys;
+pub mod online;
 mod projects;
 
 use std::path::PathBuf;
@@ -16,8 +17,8 @@ use crate::{
     settings::{self, Settings},
     state::{Page, UiState},
     ui::{
-        self, confirm_sheet, details_panel, editors_page, projects_page, sidebar, status_bar,
-        theme, toasts, toolbar,
+        self, confirm_sheet, details_panel, editors_page, new_project_sheet, project_sheets,
+        projects_page, sidebar, status_bar, theme, toasts, toolbar,
     },
 };
 
@@ -25,6 +26,8 @@ use crate::{
 pub struct HubApp {
     state: UiState,
     jobs: Jobs,
+    online: online::OnlineRunner,
+    git_check_started: bool,
     /// Where the library is saved; tests have nowhere.
     config_path: Option<PathBuf>,
     previous_width: f32,
@@ -49,6 +52,8 @@ impl HubApp {
             .map_or_else(|| (Hub::default(), None), settings::load_hub);
 
         let mut app = Self::build(hub, &settings, config_path);
+        app.state.online.cache_dir = settings::template_cache_dir();
+        app.state.unity_folders = crate::platform::unity_folders();
         app.state.notices.errors.extend(error);
         app.start_refresh(&cc.egui_ctx, JobKind::Startup);
         app
@@ -62,6 +67,7 @@ impl HubApp {
         theme::fonts::register_test_fonts(ctx);
         let mut app = Self::build(hub, &Settings::default(), None);
         app.jobs.inline = true;
+        app.online.offline = true;
         app
     }
 
@@ -69,6 +75,8 @@ impl HubApp {
         Self {
             state: UiState::new(hub, settings),
             jobs: Jobs::default(),
+            online: online::OnlineRunner::default(),
+            git_check_started: false,
             config_path,
             previous_width: 0.0,
         }
@@ -77,6 +85,12 @@ impl HubApp {
     #[cfg(test)]
     pub fn state(&self) -> &UiState {
         &self.state
+    }
+
+    /// Deliver what a background request would have.
+    #[cfg(test)]
+    pub fn deliver_online(&mut self, result: online::OnlineResult) {
+        self.finish_online(result);
     }
 
     #[cfg(test)]
@@ -172,6 +186,7 @@ impl eframe::App for HubApp {
         for command in Command::drain() {
             self.apply(ctx, command);
         }
+        self.update_online(ctx);
         self.state.busy = self.jobs.busy();
     }
 
@@ -251,6 +266,8 @@ impl eframe::App for HubApp {
             std::mem::take(&mut self.state.notices.errors),
         );
         confirm_sheet::render(&ctx, &mut self.state);
+        new_project_sheet::render(&ctx, &mut self.state);
+        project_sheets::render(&ctx, &mut self.state);
         Self::show_drop_overlay(&ctx, page_rect);
 
         // Widgets scheduled commands for `logic`: ask for the frame that

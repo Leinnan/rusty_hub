@@ -11,7 +11,7 @@ use crate::{
 
 impl HubApp {
     pub(super) fn handle_keys(&mut self, ctx: &egui::Context) {
-        if self.state.confirm_remove.is_some() || Popup::is_any_open(ctx) {
+        if self.state.sheet_open() || Popup::is_any_open(ctx) {
             return;
         }
         let pressed = |modifiers, key| ctx.input_mut(|i| i.consume_key(modifiers, key));
@@ -19,6 +19,9 @@ impl HubApp {
         if pressed(Modifiers::COMMAND, Key::F) {
             self.state.page = Page::Projects;
             self.state.focus_search = true;
+        }
+        if pressed(Modifiers::COMMAND, Key::N) {
+            ProjectCmd::RequestNew(None).schedule();
         }
         if pressed(Modifiers::COMMAND, Key::R) {
             ViewCmd::Refresh.schedule();

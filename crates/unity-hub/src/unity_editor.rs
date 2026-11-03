@@ -30,6 +30,13 @@ impl UnityEditor {
     /// The editor installed at `path`, if there is one.
     #[must_use]
     pub fn new(path: &str) -> Option<Self> {
+        Self::with_known_templates(path, &[])
+    }
+
+    /// The editor installed at `path`, reusing what is already known about
+    /// its templates rather than reading their archives again.
+    #[must_use]
+    pub fn with_known_templates(path: &str, known: &[ProjectTemplate]) -> Option<Self> {
         let base_path = Path::new(path);
         let exe_path = base_path.join(consts::UNITY_EXE_NAME);
         let meta = std::fs::metadata(&exe_path);
@@ -37,16 +44,14 @@ impl UnityEditor {
             return None;
         }
 
-        // Editors live in a folder named after their version.
-        let version = version_from_exe(&exe_path)
-            .or_else(|| Some(base_path.file_name()?.to_string_lossy().into_owned()))?;
+        let version = version_from_exe(&exe_path).or_else(|| version_from_folder(base_path))?;
 
         Some(Self {
             version,
             exe_path: exe_path.to_string_lossy().into_owned(),
             base_path: String::from(path),
             platforms: UnityEditor::get_platforms(path),
-            templates: ProjectTemplate::find_templates(path),
+            templates: ProjectTemplate::find_templates(path, known),
         })
     }
 
@@ -65,6 +70,27 @@ impl UnityEditor {
         platforms.dedup();
         platforms
     }
+}
+
+/// The numbers in a Unity version, so 2022.3.9f1 sorts before 2022.3.22f1.
+#[must_use]
+pub fn version_key(version: &str) -> Vec<u32> {
+    version
+        .split(|c: char| !c.is_ascii_digit())
+        .filter_map(|part| part.parse().ok())
+        .collect()
+}
+
+/// Editors live in a folder named after their version: directly on macOS, and
+/// with an `Editor` folder in between on Windows and Linux.
+fn version_from_folder(base_path: &Path) -> Option<String> {
+    let name = base_path.file_name()?;
+    let folder = if name == "Editor" {
+        base_path.parent()?.file_name()?
+    } else {
+        name
+    };
+    Some(folder.to_string_lossy().into_owned())
 }
 
 /// The display name of a `PlaybackEngines` folder.
@@ -102,7 +128,26 @@ fn version_from_exe(_exe_path: &Path) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::platform_label;
+    use std::path::Path;
+
+    use super::{platform_label, version_from_folder, version_key};
+
+    #[test]
+    fn versions_compare_by_number() {
+        assert!(version_key("2022.3.22f1") > version_key("2022.3.9f1"));
+        assert!(version_key("6000.0.1f1") > version_key("2022.3.22f1"));
+        assert!(version_key("").is_empty());
+    }
+
+    #[test]
+    fn the_version_comes_from_the_right_folder() {
+        for path in ["/hub/6000.2.8f1", "/hub/6000.2.8f1/Editor"] {
+            assert_eq!(
+                version_from_folder(Path::new(path)).as_deref(),
+                Some("6000.2.8f1")
+            );
+        }
+    }
 
     #[test]
     fn platform_names_match_any_case() {

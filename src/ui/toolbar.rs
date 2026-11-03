@@ -2,7 +2,7 @@
 //!
 //! Layout: traffic-light inset · search | refresh · add · panel toggles.
 
-use eframe::egui::{Align, Id, Layout, Rect, RichText, Sense, TextEdit, Ui, ViewportCommand};
+use eframe::egui::{self, Align, Id, Layout, Rect, RichText, Sense, TextEdit, Ui, ViewportCommand};
 
 use super::{
     theme::colors::{HINT_TEXT, TEXT},
@@ -83,12 +83,26 @@ fn add_button(ui: &mut Ui, state: &UiState) {
     ui.add_enabled_ui(enabled, |ui| match state.page {
         Page::Projects => {
             ui.menu_button(icon_text(Icon::Plus, "Add"), |ui| {
+                if ui.button("New Project…").clicked() {
+                    ProjectCmd::RequestNew(None).schedule();
+                    ui.close();
+                }
+                ui.separator();
                 if ui.button("Scan Folder…").clicked() {
                     ProjectCmd::ScanFolder.schedule();
                     ui.close();
                 }
                 if ui.button("Import from Unity Hub").clicked() {
                     ProjectCmd::ImportFromHub.schedule();
+                    ui.close();
+                }
+                ui.separator();
+                let any_missing = state.hub.projects.iter().any(|p| !p.is_valid);
+                if ui
+                    .add_enabled(any_missing, egui::Button::new("Remove Missing Projects…"))
+                    .clicked()
+                {
+                    ProjectCmd::RequestRemoveMissing.schedule();
                     ui.close();
                 }
             });

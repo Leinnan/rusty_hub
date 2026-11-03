@@ -1,6 +1,11 @@
 //! The saved library: editors, known projects, and projects the user removed.
 
-use crate::{config::Configuration, unity_editor::UnityEditor, unity_project::UnityProject};
+use crate::{
+    config::Configuration,
+    new_project::build_target,
+    unity_editor::{UnityEditor, version_key},
+    unity_project::{UnityProject, parse_launch_args},
+};
 use dpc_pariter::IteratorExt;
 use serde::{Deserialize, Serialize};
 use std::cmp::Reverse;
@@ -19,6 +24,9 @@ pub struct Hub {
     /// Comes first because TOML wants plain values before tables.
     #[serde(default)]
     pub hidden_projects: Vec<String>,
+    /// The executable of the editor to offer first for new projects.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preferred_editor: Option<String>,
     pub config: Configuration,
     pub projects: Vec<UnityProject>,
 }
@@ -28,6 +36,7 @@ impl Hub {
     pub fn new(config: Configuration, projects: Vec<UnityProject>) -> Self {
         Self {
             hidden_projects: Vec::new(),
+            preferred_editor: None,
             config,
             projects,
         }
@@ -74,12 +83,57 @@ impl Hub {
 
     /// Launch `project` in `editor`.
     pub fn run_project(editor: &UnityEditor, project: &UnityProject) -> io::Result<()> {
-        let child = Command::new(&editor.exe_path)
-            .arg("-projectpath")
-            .arg(&project.path)
-            .spawn()?;
-        reap_when_done(child);
+        let extra = parse_launch_args(&project.launch_args)
+            .map_err(|problem| io::Error::new(io::ErrorKind::InvalidInput, problem))?;
+        let mut command = Command::new(&editor.exe_path);
+        command.arg("-projectpath").arg(&project.path);
+        if let Some(target) = project.launch_platform.as_deref().and_then(build_target) {
+            command.arg("-buildTarget").arg(target);
+        }
+        reap_when_done(command.args(extra).spawn()?);
         Ok(())
+    }
+
+    /// Launch `editor` with no project: Unity asks which to open.
+    pub fn run_editor(editor: &UnityEditor) -> io::Result<()> {
+        reap_when_done(Command::new(&editor.exe_path).spawn()?);
+        Ok(())
+    }
+
+    /// The installed editor to move a project on `version` to: the oldest one
+    /// at or above it, or else the newest there is.
+    #[must_use]
+    pub fn nearest_editor(&self, version: &str) -> Option<&UnityEditor> {
+        let wanted = version_key(version);
+        let editors = &self.config.editors_configurations;
+        editors
+            .iter()
+            .filter(|editor| version_key(&editor.version) >= wanted)
+            .min_by_key(|editor| version_key(&editor.version))
+            .or_else(|| {
+                editors
+                    .iter()
+                    .max_by_key(|editor| version_key(&editor.version))
+            })
+    }
+
+    /// How many listed projects ask for `editor`.
+    #[must_use]
+    pub fn project_count(&self, editor: &UnityEditor) -> usize {
+        self.projects
+            .iter()
+            .filter(|project| self.editor_for_project(project) == Some(editor))
+            .count()
+    }
+
+    /// Paths of the projects whose folders are gone.
+    #[must_use]
+    pub fn missing_projects(&self) -> Vec<String> {
+        self.projects
+            .iter()
+            .filter(|project| !project.is_valid)
+            .map(|project| project.path.clone())
+            .collect()
     }
 
     /// Launch `project` in the editor it asks for.
@@ -122,7 +176,7 @@ impl Hub {
 
 /// Wait for a launched process from a thread of its own, so it doesn't stay
 /// around as a zombie after it exits.
-fn reap_when_done(mut child: Child) {
+pub(crate) fn reap_when_done(mut child: Child) {
     std::thread::spawn(move || {
         let _ = child.wait();
     });

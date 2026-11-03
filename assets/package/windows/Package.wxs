@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <!-- The UpgradeCode ties every version together: never change it. -->
+  <Package Name="Rusty Hub" Manufacturer="Piotr Siuszko" Version="$(var.Version)"
+           UpgradeCode="2FB4AA5B-B8FB-4F57-AFAF-48412C048F13" Scope="perUser" InstallerVersion="500">
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Rusty Hub is already installed."
+                  AllowSameVersionUpgrades="yes"
+                  Schedule="afterInstallInitialize" />
+    <!-- MSI's WindowsBuild can be compatibility-virtualized to 9600. -->
+    <Property Id="RUSTY_HUB_WINDOWS_BUILD">
+      <RegistrySearch Id="ActualWindowsBuild" Root="HKLM" Key="SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+                      Name="CurrentBuildNumber" Type="raw" Bitness="always64" />
+    </Property>
+    <Launch Condition="Installed OR (VersionNT64 AND RUSTY_HUB_WINDOWS_BUILD &gt;= 10240)"
+            Message="Rusty Hub requires Windows 10 or later (64-bit)." />
+    <MediaTemplate EmbedCab="yes" />
+    <Icon Id="AppIcon" SourceFile="target/package/icon/rusty-hub.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <!-- Private app files may replace a same-version copy install. -->
+    <Property Id="REINSTALLMODE" Value="amus" />
+    <Property Id="MSIRESTARTMANAGERCONTROL" Value="Disable" />
+    <!-- Detect only: never send close/end-session messages or kill the app. -->
+    <util:CloseApplication Id="DetectRustyHub" Target="rusty_hub.exe" Property="RUSTY_HUB_RUNNING"
+                           CloseMessage="no" EndSessionMessage="no" RebootPrompt="no" />
+    <CustomAction Id="RequireClosedApp" Error="Close Rusty Hub, then run setup again." />
+    <InstallExecuteSequence>
+      <Custom Action="override Wix4CloseApplications_X64" Before="InstallValidate" />
+      <Custom Action="RequireClosedApp" After="Wix4CloseApplications_X64" Condition="RUSTY_HUB_RUNNING" />
+    </InstallExecuteSequence>
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="rusty_hub">
+          <Component Id="App" Guid="54B0D1CC-BB50-4E41-A3B2-296911D42278">
+            <File Id="AppExe" Source="target/dist/rusty_hub.exe" />
+            <RegistryValue Root="HKCU" Key="Software\rusty_hub.Installed" Name="BinaryInstalled" Type="integer" Value="1" KeyPath="yes" />
+            <RemoveFolder Id="RemoveInstallFolder" On="uninstall" />
+          </Component>
+          <Component Id="Licenses" Guid="6D64D378-53A7-4221-B9E9-DC4A994A9863">
+            <File Id="LicenseFile" Source="LICENSE" Name="LICENSE.txt" />
+            <File Id="ThirdPartyLicenses" Source="target/package/licenses.txt" />
+            <RegistryValue Root="HKCU" Key="Software\rusty_hub.Installed" Name="LicensesInstalled" Type="integer" Value="1" KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppStartMenuFolder" Name="Rusty Hub">
+        <Component Id="StartMenuShortcut" Guid="*">
+          <Shortcut Id="StartMenuShortcut" Name="Rusty Hub" Target="[#AppExe]" WorkingDirectory="INSTALLFOLDER" />
+          <RemoveFolder Id="RemoveStartMenuFolder" On="uninstall" />
+          <RegistryValue Root="HKCU" Key="Software\rusty_hub.Installed" Name="StartMenuShortcut"
+                         Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <Feature Id="Main" Title="Rusty Hub" Level="1">
+      <ComponentRef Id="App" />
+      <ComponentRef Id="Licenses" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>

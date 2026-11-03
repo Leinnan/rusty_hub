@@ -21,6 +21,22 @@ pub struct Settings {
     pub sidebar_visible: bool,
     /// Details panel shown.
     pub details_visible: bool,
+    /// What the New Project dialog starts with.
+    pub new_project: NewProjectDefaults,
+}
+
+/// The New Project dialog's last choices.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct NewProjectDefaults {
+    /// The folder to create projects in.
+    pub location: Option<String>,
+    /// The editor's executable path.
+    pub editor: Option<String>,
+    /// The template's name. Paths differ between editors; names carry over.
+    pub template: Option<String>,
+    /// Start a git repository too.
+    pub init_git: bool,
 }
 
 impl Default for Settings {
@@ -29,8 +45,25 @@ impl Default for Settings {
             sort: SortKey::default(),
             sidebar_visible: true,
             details_visible: true,
+            new_project: NewProjectDefaults::default(),
         }
     }
+}
+
+/// Where projects go until the user picks somewhere: a folder in Documents.
+#[must_use]
+pub fn default_project_location() -> String {
+    let dirs = directories::UserDirs::new();
+    let documents = dirs.as_ref().and_then(|dirs| {
+        dirs.document_dir()
+            .map(Path::to_path_buf)
+            .or_else(|| Some(dirs.home_dir().to_path_buf()))
+    });
+    documents
+        .unwrap_or_default()
+        .join("Unity Projects")
+        .to_string_lossy()
+        .into_owned()
 }
 
 /// Location of the saved library.
@@ -42,6 +75,14 @@ impl Default for Settings {
 pub fn config_path() -> Option<PathBuf> {
     directories::ProjectDirs::from("rs", "", "rusty_hub_egui")
         .map(|dirs| dirs.config_dir().join("config.toml"))
+}
+
+/// Where downloaded templates are kept. Our own folder: the Unity Hub's holds
+/// account tokens, and nothing but its project list is read from it.
+#[must_use]
+pub fn template_cache_dir() -> Option<PathBuf> {
+    directories::ProjectDirs::from("rs", "", "rusty_hub_egui")
+        .map(|dirs| dirs.cache_dir().join("templates"))
 }
 
 /// The library saved at `path`, creating it if there is none. A file that

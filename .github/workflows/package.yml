@@ -1,0 +1,100 @@
+name: package
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-release
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned WiX toolchain
+        shell: pwsh
+        run: |
+          dotnet tool install --tool-path target/tools/wix wix --version 5.0.2
+          target/tools/wix/wix.exe extension add WixToolset.Util.wixext/5.0.2
+      - name: Build installer
+        shell: pwsh
+        run: ./assets/package/windows/package.ps1
+      - name: Verify package resources
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem target/dist/rusty-hub-*-windows-x64.msi | Select-Object -First 1
+          python assets/package/windows/verify.py target/dist/rusty_hub.exe $msi.FullName
+      - name: Test installer lifecycle on disposable runner
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem target/dist/rusty-hub-*-windows-x64.msi | Select-Object -First 1
+          ./assets/package/windows/smoke.ps1 -MsiPath $msi.FullName
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-installer-test-logs
+          path: target/installer-smoke/*.log
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rusty-hub-windows-x64-unsigned
+          path: |
+            target/dist/rusty_hub.exe
+            target/dist/*.msi
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+      - uses: extractions/setup-just@v3
+      - run: just dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rusty-hub-macos-unsigned
+          path: target/dist/*.dmg
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+      - uses: extractions/setup-just@v3
+      - name: Install Linux packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config libxkbcommon-dev libwayland-dev
+      - run: just linux-package
+      - name: Check the package's contents
+        run: |
+          tar -tzf target/dist/rusty-hub-*-linux-*.tar.gz > contents.txt
+          for file in usr/bin/rusty_hub \
+              usr/share/applications/io.github.Leinnan.RustyHub.desktop \
+              usr/share/icons/hicolor/512x512/apps/io.github.Leinnan.RustyHub.png \
+              usr/share/icons/hicolor/scalable/apps/io.github.Leinnan.RustyHub.svg \
+              usr/share/doc/rusty-hub/LICENSE \
+              usr/share/doc/rusty-hub/licenses.txt; do
+            grep -Fx "$file" contents.txt
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rusty-hub-linux
+          path: target/dist/*.tar.gz

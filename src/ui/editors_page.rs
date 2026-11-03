@@ -1,14 +1,15 @@
 //! Search paths and installed editors.
 
 use eframe::egui::{
-    Align, CornerRadius, Label, Layout, Response, RichText, Role, ScrollArea, Sense, Ui, UiBuilder,
-    Vec2, WidgetInfo, vec2,
+    Align, Button, CornerRadius, Label, Layout, OpenUrl, Response, RichText, Role, ScrollArea,
+    Sense, Ui, UiBuilder, Vec2, WidgetInfo, vec2,
 };
 use unity_hub::unity_editor::UnityEditor;
 
 use super::{
     format::abbreviate_home,
-    theme::colors::{CARD_BG, CARD_BG_HOVER, HINT_TEXT, TEXT, TEXT_WEAK},
+    status_bar::plural,
+    theme::colors::{CARD_BG, CARD_BG_HOVER, HINT_TEXT, SUCCESS, TEXT, TEXT_WEAK},
     widgets::{
         buttons::small_icon_button,
         chip::chip,
@@ -16,7 +17,11 @@ use super::{
         section::section_header,
     },
 };
-use crate::{commands::EditorCmd, platform::REVEAL_LABEL, state::UiState};
+use crate::{
+    commands::{EditorCmd, ProjectCmd},
+    platform::REVEAL_LABEL,
+    state::UiState,
+};
 
 /// Height of a search path row (px).
 const PATH_ROW_HEIGHT: f32 = 36.0;
@@ -25,7 +30,9 @@ const EDITOR_ROW_HEIGHT: f32 = 52.0;
 /// Room a platform chip takes on average, for deciding how many fit (px).
 const CHIP_SLOT: f32 = 66.0;
 /// Room an editor row keeps for its version and path (px).
-const EDITOR_TEXT_WIDTH: f32 = 260.0;
+const EDITOR_TEXT_WIDTH: f32 = 290.0;
+/// Unity's release notes for a version go after this.
+const RELEASE_NOTES: &str = "https://unity.com/releases/editor/whats-new/";
 
 /// Render the page.
 pub fn render(ui: &mut Ui, state: &UiState) {
@@ -52,13 +59,21 @@ pub fn render(ui: &mut Ui, state: &UiState) {
                 hint(ui, "No editors found in the search paths.");
             }
             for editor in editors {
-                let response = editor_row(ui, editor);
-                response.context_menu(|ui| {
-                    if ui.button(REVEAL_LABEL).clicked() {
-                        EditorCmd::Reveal(editor.base_path.clone()).schedule();
-                        ui.close();
-                    }
-                });
+                let row = EditorRow {
+                    editor,
+                    projects: state.hub.project_count(editor),
+                    preferred: state.hub.preferred_editor.as_ref() == Some(&editor.exe_path),
+                    idle,
+                };
+                editor_row(ui, &row).context_menu(|ui| editor_menu(ui, &row));
+            }
+
+            if !state.unity_folders.is_empty() {
+                ui.add_space(16.0);
+                section_header(ui, "Unity folders");
+                for (name, path) in &state.unity_folders {
+                    folder_row(ui, name, path);
+                }
             }
         });
 }
@@ -102,27 +117,112 @@ fn search_path_row(ui: &mut Ui, path: &str, idle: bool) {
     });
 }
 
-fn editor_row(ui: &mut Ui, editor: &UnityEditor) -> Response {
+/// What an editor's row shows.
+struct EditorRow<'a> {
+    editor: &'a UnityEditor,
+    /// How many listed projects ask for it.
+    projects: usize,
+    /// It's offered first for new projects.
+    preferred: bool,
+    /// No background job is running.
+    idle: bool,
+}
+
+fn editor_menu(ui: &mut Ui, row: &EditorRow<'_>) {
+    let editor = row.editor;
+    if ui.button("Open Unity").clicked() {
+        EditorCmd::Run(editor.exe_path.clone()).schedule();
+        ui.close();
+    }
+    let preferred = if row.preferred {
+        "Stop Preferring"
+    } else {
+        "Prefer for New Projects"
+    };
+    if ui.add_enabled(row.idle, Button::new(preferred)).clicked() {
+        let exe = (!row.preferred).then(|| editor.exe_path.clone());
+        EditorCmd::SetPreferred(exe).schedule();
+        ui.close();
+    }
+    if ui.button("Release Notes").clicked() {
+        ui.ctx().open_url(OpenUrl::new_tab(format!(
+            "{RELEASE_NOTES}{}",
+            editor.version
+        )));
+        ui.close();
+    }
+    ui.separator();
+    if ui.button(REVEAL_LABEL).clicked() {
+        EditorCmd::Reveal(editor.base_path.clone()).schedule();
+        ui.close();
+    }
+}
+
+/// A folder of Unity's, with a button to show it.
+fn folder_row(ui: &mut Ui, name: &str, path: &str) {
+    let (_, mut row) = card(ui, PATH_ROW_HEIGHT, Sense::hover());
+    let tip = format!("{REVEAL_LABEL}: {name}");
+    if small_icon_button(&mut row, Icon::FolderOpen, 14.0, true, &tip).clicked() {
+        EditorCmd::Reveal(path.to_owned()).schedule();
+    }
+    row.with_layout(Layout::left_to_right(Align::Center), |ui| {
+        ui.add(Label::new(RichText::new(name).color(TEXT)).selectable(false));
+        ui.add(
+            Label::new(
+                RichText::new(abbreviate_home(path))
+                    .small()
+                    .color(HINT_TEXT),
+            )
+            .truncate()
+            .selectable(false),
+        );
+    });
+}
+
+fn editor_row(ui: &mut Ui, details: &EditorRow<'_>) -> Response {
+    let (editor, idle) = (details.editor, details.idle);
     let (response, mut row) = card(ui, EDITOR_ROW_HEIGHT, Sense::click());
     response.widget_info(|| WidgetInfo::labeled(Role::Group, true, &editor.version));
     let reveal = small_icon_button(&mut row, Icon::FolderOpen, 14.0, true, REVEAL_LABEL);
     if reveal.clicked() {
         EditorCmd::Reveal(editor.base_path.clone()).schedule();
     }
+    let tip = format!("Open Unity {}", editor.version);
+    if small_icon_button(&mut row, Icon::Play, 14.0, true, &tip).clicked() {
+        EditorCmd::Run(editor.exe_path.clone()).schedule();
+    }
+    let tip = format!("New project with {}", editor.version);
+    if small_icon_button(&mut row, Icon::Plus, 14.0, idle, &tip).clicked() {
+        ProjectCmd::RequestNew(Some(editor.exe_path.clone())).schedule();
+    }
     platform_chips(&mut row, &editor.platforms);
     row.with_layout(Layout::top_down(Align::Min), |ui| {
         ui.spacing_mut().item_spacing.y = 2.0;
         ui.add_space(3.0);
-        ui.add(
-            Label::new(
-                RichText::new(&editor.version)
-                    .size(13.5)
-                    .strong()
-                    .color(TEXT),
-            )
-            .truncate()
-            .selectable(false),
-        );
+        ui.horizontal(|ui| {
+            ui.add(
+                Label::new(
+                    RichText::new(&editor.version)
+                        .size(13.5)
+                        .strong()
+                        .color(TEXT),
+                )
+                .selectable(false),
+            );
+            ui.add(
+                Label::new(
+                    RichText::new(plural(details.projects, "project"))
+                        .small()
+                        .color(TEXT_WEAK),
+                )
+                .selectable(false),
+            );
+            if details.preferred {
+                ui.add(
+                    Label::new(RichText::new("Preferred").small().color(SUCCESS)).selectable(false),
+                );
+            }
+        });
         ui.add(
             Label::new(
                 RichText::new(abbreviate_home(&editor.base_path))

@@ -1,6 +1,7 @@
 //! Editor commands.
 
 use eframe::egui;
+use unity_hub::hub::Hub;
 
 use super::HubApp;
 use crate::{commands::EditorCmd, jobs::JobKind, platform};
@@ -28,6 +29,29 @@ impl HubApp {
                         .unity_search_paths
                         .retain(|known| *known != path);
                     self.start_refresh(ctx, JobKind::Refresh);
+                }
+            }
+            EditorCmd::Run(exe) => {
+                let state = &mut self.state;
+                let Some(editor) = state.editor(&exe) else {
+                    return;
+                };
+                let version = editor.version.clone();
+                match Hub::run_editor(editor) {
+                    Ok(()) => state
+                        .notices
+                        .toasts
+                        .push(format!("Opening Unity {version}")),
+                    Err(error) => state
+                        .notices
+                        .errors
+                        .push(format!("Couldn't open Unity {version}: {error}")),
+                }
+            }
+            EditorCmd::SetPreferred(exe) => {
+                if self.state.busy.is_none() {
+                    self.state.hub.preferred_editor = exe;
+                    self.save_config();
                 }
             }
             EditorCmd::Reveal(path) => {

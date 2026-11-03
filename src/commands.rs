@@ -7,7 +7,7 @@
 
 use std::{cell::RefCell, collections::VecDeque, path::PathBuf};
 
-use crate::state::{Page, SortKey};
+use crate::state::{Page, ProjectSettingsForm, SortKey};
 
 /// Every action the user can trigger.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +40,38 @@ pub enum ProjectCmd {
     RequestRemove(String),
     /// Remove it from the list.
     ConfirmRemove(String),
+    /// Open the New Project dialog, with an editor chosen if one is named by
+    /// its executable path.
+    RequestNew(Option<String>),
+    /// Pick the folder a new project goes in.
+    PickNewLocation,
+    /// Create the project the New Project dialog describes.
+    CreateNew,
+    /// Ask for the online catalog again.
+    RetryCatalog,
+    /// Download an online template, named by its package.
+    DownloadTemplate(String),
+    /// Stop the download.
+    CancelDownload,
+    /// Delete downloaded templates.
+    ClearDownloads,
+    /// Open the Project Settings dialog.
+    RequestSettings(String),
+    /// Keep what the Project Settings dialog holds.
+    SaveSettings(ProjectSettingsForm),
+    /// Open the Change Version dialog.
+    RequestChangeVersion(String),
+    /// Move a project to a chosen editor's version and open it there.
+    ChangeVersion {
+        /// The project's path.
+        project: String,
+        /// The editor's executable path.
+        editor: String,
+    },
+    /// Ask whether to remove projects whose folders are gone.
+    RequestRemoveMissing,
+    /// Remove projects whose folders are gone.
+    RemoveMissing,
     /// Pick a folder to scan.
     ScanFolder,
     /// Add the project at, or the projects under, a folder.
@@ -55,8 +87,12 @@ pub enum EditorCmd {
     AddSearchPath,
     /// Stop searching a folder.
     RemoveSearchPath(String),
-    /// Show an editor's folder in the file manager.
+    /// Show a folder in the file manager.
     Reveal(String),
+    /// Launch an editor with no project, named by its executable path.
+    Run(String),
+    /// Offer an editor first for new projects, or stop preferring one.
+    SetPreferred(Option<String>),
 }
 
 /// Navigation and layout.

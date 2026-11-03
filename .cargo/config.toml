@@ -1,0 +1,7 @@
+[alias]
+xtask = "run --quiet --package xtask --"
+
+# Portable builds and per-user MSI installs must run on a clean Windows
+# machine without an administrator-installed Visual C++ redistributable.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

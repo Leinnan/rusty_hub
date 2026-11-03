@@ -4,6 +4,8 @@ pub mod confirm_sheet;
 pub mod details_panel;
 pub mod editors_page;
 pub mod format;
+pub mod new_project_sheet;
+pub mod project_sheets;
 pub mod projects_page;
 pub mod sidebar;
 pub mod start_screen;

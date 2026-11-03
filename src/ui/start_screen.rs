@@ -1,5 +1,5 @@
-//! What the projects page shows with no projects: scan and import buttons,
-//! and a drop hint.
+//! What the projects page shows with no projects: new, scan and import
+//! buttons, and a drop hint.
 
 use eframe::egui::{self, RichText, Ui, UiBuilder};
 
@@ -15,7 +15,7 @@ use crate::commands::ProjectCmd;
 /// Height of the content, for centering (points).
 const HEIGHT: f32 = 150.0;
 /// Width of the button row, for centering (points).
-const BUTTONS_WIDTH: f32 = 290.0;
+const BUTTONS_WIDTH: f32 = 400.0;
 
 /// Render the start screen centered in `ui`'s rect.
 pub fn render(ui: &mut Ui, enabled: bool) {
@@ -35,10 +35,16 @@ pub fn render(ui: &mut Ui, enabled: bool) {
             ui.label(RichText::new("Drop a folder here to add its projects").color(TEXT_WEAK));
             ui.add_space(14.0);
             ui.horizontal(|ui| {
-                // Center the two buttons.
+                // Center the buttons.
                 ui.add_space((ui.available_width() - BUTTONS_WIDTH).max(0.0) / 2.0);
                 if ui
-                    .add_enabled(enabled, primary_button("Scan Folder…"))
+                    .add_enabled(enabled, primary_button("New Project…"))
+                    .clicked()
+                {
+                    ProjectCmd::RequestNew(None).schedule();
+                }
+                if ui
+                    .add_enabled(enabled, secondary_button("Scan Folder…"))
                     .clicked()
                 {
                     ProjectCmd::ScanFolder.schedule();

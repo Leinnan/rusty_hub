@@ -16,6 +16,9 @@ mod tests;
 
 use eframe::egui::ViewportBuilder;
 
+/// Matches the `.desktop` file on Linux, which pairs windows with their launcher.
+const APP_ID: &str = "io.github.Leinnan.RustyHub";
+
 /// The window icon, rendered from `assets/icon/icon.svg` by `build.rs`.
 const WINDOW_ICON: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/icon.png"));
 
@@ -29,6 +32,7 @@ fn main() -> eframe::Result {
     let native_options = eframe::NativeOptions {
         viewport: ViewportBuilder::default()
             .with_title(ui::APP_NAME)
+            .with_app_id(APP_ID)
             .with_inner_size([1100.0, 700.0])
             .with_min_inner_size([760.0, 480.0])
             .with_icon(icon)
@@ -37,6 +41,9 @@ fn main() -> eframe::Result {
             .with_fullsize_content_view(cfg!(target_os = "macos"))
             .with_titlebar_shown(!cfg!(target_os = "macos"))
             .with_title_shown(!cfg!(target_os = "macos")),
+        // The app id would otherwise also choose where eframe keeps its
+        // settings, and everything saved so far would be left behind.
+        persistence_path: eframe::storage_dir(ui::APP_NAME).map(|dir| dir.join("app.ron")),
         ..Default::default()
     };
     eframe::run_native(

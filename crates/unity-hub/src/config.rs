@@ -1,9 +1,12 @@
 //! Where to look for Unity editors, and the editors found there.
 
+use crate::project_template::ProjectTemplate;
 use crate::{consts, unity_editor::UnityEditor};
 use dpc_pariter::IteratorExt;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -17,9 +20,15 @@ impl Configuration {
     /// belongs on a background thread.
     pub fn rebuild(&mut self) {
         let paths = self.get_unity_paths();
+        let known: Arc<Vec<ProjectTemplate>> = Arc::new(
+            self.editors_configurations
+                .iter()
+                .flat_map(|editor| editor.templates.iter().cloned())
+                .collect(),
+        );
         self.editors_configurations = paths
             .into_iter()
-            .parallel_map(|path| UnityEditor::new(&path))
+            .parallel_map(move |path| UnityEditor::with_known_templates(&path, &known))
             .flatten()
             .collect();
     }
@@ -45,12 +54,14 @@ impl Configuration {
     }
 
     fn search_for_editor(path: &str) -> Vec<String> {
-        let path_exists = std::fs::metadata(path).is_ok();
+        let home = directories::BaseDirs::new().map(|dirs| dirs.home_dir().to_path_buf());
+        let path = expand_home(path, home.as_deref());
+        let path_exists = std::fs::metadata(&path).is_ok();
         if !path_exists {
             return Vec::new();
         }
 
-        let hashset: HashSet<String> = WalkDir::new(path)
+        let hashset: HashSet<String> = WalkDir::new(&path)
             .max_depth(2)
             .into_iter()
             .filter_map(Result::ok)
@@ -59,6 +70,17 @@ impl Configuration {
             .collect();
 
         Vec::from_iter(hashset)
+    }
+}
+
+/// `path` with a leading `~` replaced by `home`.
+fn expand_home(path: &str, home: Option<&Path>) -> PathBuf {
+    match (path.strip_prefix('~'), home) {
+        (Some(""), Some(home)) => home.to_path_buf(),
+        (Some(rest), Some(home)) if rest.starts_with(['/', '\\']) => {
+            home.join(rest.trim_start_matches(['/', '\\']))
+        }
+        _ => PathBuf::from(path),
     }
 }
 
@@ -78,5 +100,25 @@ impl Default for Configuration {
             unity_search_paths: vec!["~/Unity/Hub/Editor".to_string()],
             editors_configurations: Vec::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::{Path, PathBuf};
+
+    use super::expand_home;
+
+    #[test]
+    fn only_a_leading_home_marker_is_expanded() {
+        let home = Some(Path::new("/home/me"));
+        assert_eq!(
+            expand_home("~/Unity/Hub", home),
+            PathBuf::from("/home/me/Unity/Hub")
+        );
+        assert_eq!(expand_home("~", home), PathBuf::from("/home/me"));
+        assert_eq!(expand_home("~other/x", home), PathBuf::from("~other/x"));
+        assert_eq!(expand_home("/opt/~/x", home), PathBuf::from("/opt/~/x"));
+        assert_eq!(expand_home("~/x", None), PathBuf::from("~/x"));
     }
 }
